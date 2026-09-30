@@ -40,7 +40,11 @@
    "fieldConfig": {
     "defaults": {
      "unit": "currencyUSD",
-     "decimals": 2
+     "decimals": 2,
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "#5794F2"
+     }
     },
     "overrides": []
    },
@@ -84,7 +88,11 @@
    "fieldConfig": {
     "defaults": {
      "unit": "percent",
-     "decimals": 2
+     "decimals": 1,
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "#73BF69"
+     }
     },
     "overrides": []
    },
@@ -128,7 +136,11 @@
    "fieldConfig": {
     "defaults": {
      "unit": "none",
-     "decimals": 2
+     "decimals": 0,
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "#73BF69"
+     }
     },
     "overrides": []
    },
@@ -166,13 +178,17 @@
      "rawQuery": true,
      "editorMode": "code",
      "format": "table",
-     "rawSql": "select 100.0*avg(case when status='success' then 1 else 0 end) as success from runs where status<>'running'"
+     "rawSql": "select coalesce(100.0*avg(case when status='success' then 1 else 0 end),0) as success from runs where status<>'running'"
     }
    ],
    "fieldConfig": {
     "defaults": {
      "unit": "percent",
-     "decimals": 2
+     "decimals": 1,
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "#73BF69"
+     }
     },
     "overrides": []
    },
@@ -216,7 +232,11 @@
    "fieldConfig": {
     "defaults": {
      "unit": "none",
-     "decimals": 2
+     "decimals": 0,
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "#73BF69"
+     }
     },
     "overrides": []
    },
@@ -339,7 +359,7 @@
   {
    "id": 9,
    "type": "barchart",
-   "title": "Tool calls & avg latency (ms)",
+   "title": "Tool calls (bars) & avg latency ms (right axis)",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "finsight-pg"
@@ -362,7 +382,35 @@
      "format": "table",
      "rawSql": "select name as tool, count(*) as calls, round(avg(duration_ms)::numeric,0) as avg_ms from events where kind='tool_call' group by name order by calls desc"
     }
-   ]
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "avg_ms"
+      },
+      "properties": [
+       {
+        "id": "custom.axisPlacement",
+        "value": "right"
+       },
+       {
+        "id": "unit",
+        "value": "ms"
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "xTickLabelRotation": -30,
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    }
+   }
   },
   {
    "id": 10,
@@ -390,7 +438,13 @@
      "format": "table",
      "rawSql": "select kind, count(*) as n from events group by kind order by n desc"
     }
-   ]
+   ],
+   "options": {
+    "xTickLabelRotation": -30,
+    "legend": {
+     "showLegend": false
+    }
+   }
   },
   {
    "id": 11,

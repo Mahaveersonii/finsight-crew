@@ -149,7 +149,8 @@ def valuation_report(fund: dict, fcf_history: list, tech: dict) -> dict:
             "ev_to_ebitda": _r(fund.get("enterpriseToEbitda") or (
                 fund["enterpriseValue"] / fund["ebitda"] if fund.get("enterpriseValue") and fund.get("ebitda") else None), 1),
             "price_to_book": _r(fund.get("priceToBook"), 1),
-            "fcf_yield_pct": _r(fcf_now / fund["marketCap"] * 100, 2) if fcf_now and fund.get("marketCap") else None,
+            "fcf_yield_pct": _r(fcf_now / fund["marketCap"] * 100, 2)
+            if fcf_now and fund.get("marketCap") and fund.get("sector") != "Financial Services" else None,
             "net_margin_pct": _r((fund.get("profitMargins") or 0) * 100, 1) if fund.get("profitMargins") is not None else None,
             "roe_pct": _r((fund.get("returnOnEquity") or 0) * 100, 1) if fund.get("returnOnEquity") is not None else None,
             "debt_to_equity": _r(fund.get("debtToEquity"), 1),

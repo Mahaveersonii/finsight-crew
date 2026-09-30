@@ -31,8 +31,7 @@ def validate_signal(output):
     ok, value = _check_signal(output)
     if not ok:
         db.log_event("guardrail_retry", "portfolio_manager", value, T.RUN["run_id"])
-        if T.RUN["on_event"]:
-            T.RUN["on_event"](f"🔁 Guardrail rejected PM output: {value}")
+        T.notify(f"🔁 Guardrail rejected PM output: {value}")
     return ok, value
 
 
@@ -59,6 +58,13 @@ def _check_signal(output):
         return False, "citations must be a non-empty list of the 10-K citation tags used by the analyst, e.g. '[AAPL 10-K FY2025 · Risk Factors · #10]'"
     if not isinstance(sig["key_risks"], list):
         return False, "key_risks must be a list of strings"
+    real = T.RUN["citations"]
+    if real:
+        valid = [c for c in sig["citations"] if str(c).strip() in real]
+        if not valid:
+            return False, ("None of your citations were actually retrieved. Use only these exact tags from "
+                           f"search_sec_filings: {sorted(real)[:6]}")
+        sig["citations"] = valid  # silently drop any invented extras
     if "plan_position" not in T.RUN["called"]:
         return False, ("You answered without calling the plan_position tool. Call get_portfolio_state and "
                        "plan_position first, then copy stop_loss, take_profit and shares from plan_position.")

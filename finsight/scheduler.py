@@ -19,6 +19,7 @@ log = logging.getLogger("finsight.scheduler")
 
 
 def mark_to_market_job():
+    db.fail_stale_runs(minutes=15)
     res = broker.mark_to_market()
     log.info("mark-to-market: equity=%s exits=%s", res["snapshot"]["equity"], res["exits"])
     for ticker, reason, pnl in res["exits"]:
@@ -45,6 +46,9 @@ def warm_rag():
 
 def main():
     log.info("DB backend: %s | watchlist: %s", db.backend(), config.WATCHLIST)
+    stale = db.fail_stale_runs(minutes=15)
+    if stale:
+        log.warning("marked %d interrupted run(s)", stale)
     warm_rag()
     if "--once" in sys.argv:
         crew_job()

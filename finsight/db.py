@@ -145,6 +145,17 @@ def finish_run(run_id: int, **values):
         c.execute(update(runs).where(runs.c.id == run_id).values(**values))
 
 
+def fail_stale_runs(minutes: int = 15) -> int:
+    """Runs still 'running' after `minutes` were killed mid-way (restart, crash).
+    Mark them 'interrupted' so dashboards and success rates stay truthful."""
+    from datetime import timedelta
+    cutoff = now() - timedelta(minutes=minutes)
+    with engine().begin() as c:
+        res = c.execute(update(runs).where(runs.c.status == "running", runs.c.started_at < cutoff)
+                        .values(status="interrupted", finished_at=now()))
+    return res.rowcount
+
+
 def log_event(kind: str, name: str, detail="", run_id=None, duration_ms=None):
     if not isinstance(detail, str):
         detail = json.dumps(detail, default=str)

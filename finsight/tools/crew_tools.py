@@ -15,13 +15,24 @@ from . import market_data as md
 from . import valuation as val
 
 # Per-run context: run id for logging + a cache so each API is hit once per run.
-RUN = {"run_id": None, "cache": {}, "called": [], "on_event": None}
+RUN = {"run_id": None, "cache": {}, "called": [], "citations": set(), "on_event": None}
 
 
 def reset_run(run_id):
     RUN["run_id"] = run_id
     RUN["cache"] = {}
     RUN["called"] = []
+    RUN["citations"] = set()
+
+
+def notify(msg):
+    """Progress callback. CrewAI may run tools on worker threads where a UI callback can
+    fail (e.g. Streamlit has no script context there) - that must never break a tool."""
+    if RUN["on_event"]:
+        try:
+            RUN["on_event"](msg)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _cached(key, fn):
@@ -35,8 +46,7 @@ def _logged(fn):
     def wrapper(*args, **kwargs):
         t0 = time.time()
         RUN["called"].append(fn.__name__)
-        if RUN["on_event"]:
-            RUN["on_event"](f"🔧 {fn.__name__}({', '.join(map(str, [*args, *kwargs.values()]))})")
+        notify(f"🔧 {fn.__name__}({', '.join(map(str, [*args, *kwargs.values()]))})")
         try:
             out = fn(*args, **kwargs)
             db.log_event("tool_call", fn.__name__, json.dumps({"args": args, "kwargs": kwargs})[:500],
@@ -132,6 +142,7 @@ def search_sec_filings(ticker: str, question: str) -> str:
     if t not in rag.indexed_tickers():
         rag.ingest_ticker(t)
     hits = rag.search(t, question, k=3, run_id=RUN["run_id"])
+    RUN["citations"].update(h["citation"] for h in hits)
     return json.dumps([{"citation": h["citation"], "relevance": h["score"], "text": h["text"][:700]} for h in hits])
 
 

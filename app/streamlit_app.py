@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from finsight import broker, config, db, pipeline, rag  # noqa: E402
 from finsight.llm import model_chain  # noqa: E402
-from finsight.tools import crew_tools as T  # noqa: E402
 
 st.set_page_config(page_title="FinSight Crew", page_icon="📈", layout="wide")
 
@@ -45,6 +44,16 @@ with st.sidebar:
         f"- Take-profit = 2R\n- BUY needs confidence ≥ {config.MIN_CONFIDENCE}"
     )
 
+@st.cache_data(ttl=600, show_spinner="Loading market data…")
+def _overview(tk):
+    """Cached per ticker for 10 min. Deliberately does not touch crew_tools.RUN, so browsing
+    here can never reset the state of a crew run in progress."""
+    from finsight.tools import market_data as md, valuation as val
+    df = md.get_price_history(tk)
+    tech = val.technicals(df)
+    return val.valuation_report(md.get_fundamentals(tk), md.get_fcf_history(tk), tech), tech, df.reset_index()
+
+
 tab_run, tab_port, tab_rag, tab_bt, tab_ops = st.tabs(
     ["🧠 Run the Crew", "💼 Portfolio", "📚 Ask the 10-K", "📈 Backtest & RAG Eval", "🔍 Agent Ops"])
 
@@ -60,8 +69,7 @@ with tab_run:
 
     if ticker:
         try:
-            T.reset_run(None)
-            v, tc = T.valuation(ticker), T.tech(ticker)
+            v, tc, px_df = _overview(ticker)
             m = st.columns(6)
             m[0].metric("Price", f"${v['price']:,.0f}")
             m[1].metric("P/E (ttm)", v["ratios"]["pe_trailing"])
@@ -69,7 +77,6 @@ with tab_run:
             m[3].metric("FCF yield", f"{v['ratios']['fcf_yield_pct']:.1f}%" if v["ratios"]["fcf_yield_pct"] else "–")
             m[4].metric("12m return", f"{tc['return_12m_pct']}%")
             m[5].metric("Quant score", v["quant_score"]["composite"])
-            px_df = T.prices(ticker).reset_index()
             px_df["SMA50"] = px_df["Close"].rolling(50).mean()
             px_df["SMA200"] = px_df["Close"].rolling(200).mean()
             fig = go.Figure()
@@ -88,7 +95,10 @@ with tab_run:
 
             def on_event(msg):
                 lines.append(msg)
-                log_box.code("\n".join(lines[-25:]), language=None)
+                try:  # only works on the script thread; worker-thread messages show on the next update
+                    log_box.code("\n".join(lines[-25:]), language=None)
+                except Exception:  # noqa: BLE001
+                    pass
 
             try:
                 res = pipeline.analyze(ticker, on_event=on_event, execute_trade=trade)
@@ -249,7 +259,8 @@ with tab_ops:
     ev = pd.DataFrame(db.fetch_all("select ts, run_id, kind, name, duration_ms, detail from events order by id desc limit 500"))
     c = st.columns(5)
     c[0].metric("Crew runs", len(runs))
-    c[1].metric("Success rate", f"{(runs['status'] == 'success').mean():.0%}" if len(runs) else "–")
+    done = runs[runs["status"] != "running"] if len(runs) else runs
+    c[1].metric("Success rate", f"{(done['status'] == 'success').mean():.0%}" if len(done) else "–")
     c[2].metric("Avg run time", f"{runs['duration_s'].mean():.0f}s" if len(runs) and runs["duration_s"].notna().any() else "–")
     c[3].metric("Tool calls", int((ev["kind"] == "tool_call").sum()) if len(ev) else 0)
     c[4].metric("Recoveries", int(ev["kind"].isin(["llm_fallback", "data_fallback", "guardrail_retry", "risk_override"]).sum()) if len(ev) else 0)

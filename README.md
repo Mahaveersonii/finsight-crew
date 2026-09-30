@@ -108,9 +108,13 @@ Hybrid re-ranking lifts Hit@3 from 61% to 78%. The misses (e.g. "who builds Appl
 | Postgres down | Automatic SQLite fallback | sidebar "Database" |
 | PM returns malformed JSON / skips its sizing tool / no citations | CrewAI **guardrail** rejects with a specific message; agent retries (max 3) | `guardrail_retry` |
 | LLM proposes a wrong stop-loss or size | Deterministic risk engine overrides it | `risk_override` |
+| PM cites a passage it never retrieved | Guardrail checks every citation against the passages actually returned by `search_sec_filings` in this run; invented tags are dropped, none valid → retry | `guardrail_retry` |
+| LLM misapplies the fund rules (e.g. BUY with composite < 70) | Deterministic policy check downgrades to HOLD | `risk_veto` (`policy:composite<70`) |
 | Signal breaches risk limits / low confidence | Trade vetoed | `risk_veto` |
 | Price hits stop / target between crew runs | Scheduler exits automatically every 15 min | `auto_exit` |
 | A tool raises | Tool returns `{"error", "hint"}` so the agent continues and reports the gap | `error` |
+| Process killed mid-run (restart, crash) | Run marked `interrupted` on next scheduler tick, so success rates stay truthful | `runs.status` |
+| Two crew runs at once | One run per process (the local 8B model serves one request at a time anyway); the second gets a clear "busy" message | UI |
 
 **Memory:** `get_past_decisions` gives the analyst the fund's previous signals and current position for the ticker, so decisions stay consistent across days or explicitly explain a change.
 
@@ -171,6 +175,7 @@ streamlit run app/streamlit_app.py        # http://localhost:8501
 python -m finsight.scheduler --once       # one pass over the watchlist
 python eval/run_rag_eval.py               # RAG evaluation
 python scripts/run_backtest.py            # backtest
+python scripts/reset_portfolio.py --yes   # clean slate before a demo
 ```
 
 Ollama runs on the host rather than in Docker so it can use the Apple-silicon GPU (Metal); containers reach it through `host.docker.internal:11434`.

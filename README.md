@@ -40,48 +40,9 @@ Switch markets with the sidebar button in Streamlit or the **Market** dropdown i
 
 ## 1. Architecture
 
-```mermaid
-flowchart LR
-    subgraph Sources
-        YF[Yahoo Finance<br/>prices, fundamentals]
-        SEC[SEC EDGAR<br/>10-K filings + XBRL<br/>US]
-        AR[Company annual-report PDFs<br/>downloaded by report_bot<br/>India]
-    end
+![FinSight Crew workflow: data sources, three AI agents, guardrails, risk officer, storage and screens, for the US and India markets](docs/architecture.svg)
 
-    subgraph RAG["RAG pipeline"]
-        CH[Chunk 1,200 chars<br/>200 overlap]
-        EMB[nomic-embed-text<br/>via Ollama]
-        VDB[(ChromaDB<br/>cosine)]
-        CH --> EMB --> VDB
-    end
-
-    subgraph Crew["CrewAI - sequential"]
-        A1[1. Market Data Extractor]
-        A2[2. Financial Analyst]
-        A3[3. Portfolio Manager]
-        A1 --> A2 --> A3
-    end
-
-    subgraph Engine["Deterministic engines"]
-        VAL[Valuation<br/>ratios, 10y DCF,<br/>reverse DCF, quant score]
-        RISK[Risk engine + paper broker<br/>1% risk, ATR stop, caps]
-    end
-
-    SEC --> CH
-    AR -->|narrative pages,<br/>section labels| CH
-    YF --> A1
-    SEC -. fallback .-> A1
-    A2 <--> VAL
-    A2 <-->|hybrid search<br/>+ citations| VDB
-    A3 <--> RISK
-    A3 -->|JSON signal<br/>guardrail-validated| RISK
-    RISK --> PG[(PostgreSQL)]
-    PG --> ST[Streamlit]
-    PG --> GF[Grafana]
-    SCH[Scheduler<br/>15-min mark-to-market<br/>daily crew run] --> Crew
-    SCH --> RISK
-    LLM[Ollama finsight-qwen3<br/>→ qwen3:8b → llama3.2<br/>→ Groq/Gemini optional] -.-> Crew
-```
+The same diagram is used in the team guide. Regenerate it after changing the layout with `python docs/make_architecture_diagram.py`.
 
 ### Agents and tools
 
@@ -262,6 +223,7 @@ tests/               30 offline pytest tests
 scripts/             CLI entry points
 Modelfile            custom Ollama model
 docker-compose.yml   Postgres, app + scheduler per market, Grafana
+docs/                architecture.svg + the script that draws it
 ```
 
 ## 7. Rubric mapping

@@ -1,6 +1,7 @@
 """Always-on scheduler (runs as its own container).
 
-  every 15 min   mark-to-market: refresh prices, fire stop-loss / take-profit, snapshot equity  (no LLM)
+  every 15 min   mark-to-market during exchange hours: refresh prices, fire stop-loss /
+                 take-profit, snapshot equity (no LLM)
   weekdays after the close     run the full crew over the watchlist (16:30 New York / 16:00 India) (LLM)
   on start       make sure every watchlist ticker's 10-K is in the vector store
 
@@ -18,8 +19,22 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("finsight.scheduler")
 
 
-def mark_to_market_job():
+def market_open(now=None, grace_min: int = 20) -> bool:
+    """True during the exchange's regular session (plus a grace period to capture the close).
+    Outside it prices do not move, so refreshing them only adds duplicate snapshots and log noise."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = now or datetime.now(ZoneInfo(config.M["timezone"]))
+    (oh, om), (ch, cm) = config.M["market_hours"]
+    minutes = now.hour * 60 + now.minute
+    return now.weekday() < 5 and oh * 60 + om <= minutes <= ch * 60 + cm + grace_min
+
+
+def mark_to_market_job(force: bool = False):
     db.fail_stale_runs(minutes=15)
+    if not force and not market_open():
+        return
     res = broker.mark_to_market()
     log.info("mark-to-market: equity=%s exits=%s", res["snapshot"]["equity"], res["exits"])
     for ticker, reason, pnl in res["exits"]:
@@ -52,13 +67,13 @@ def main():
     warm_rag()
     if "--once" in sys.argv:
         crew_job()
-        mark_to_market_job()
+        mark_to_market_job(force=True)
         return
     tz, (hh, mm) = config.M["timezone"], config.M["crew_time"]
     sched = BlockingScheduler(timezone=tz)
     sched.add_job(mark_to_market_job, "interval", minutes=15, id="mtm")
     sched.add_job(crew_job, "cron", day_of_week="mon-fri", hour=hh, minute=mm, id="crew")
-    mark_to_market_job()
+    mark_to_market_job(force=True)   # one snapshot at start-up, whatever the time
     log.info("Scheduler started")
     sched.start()
 

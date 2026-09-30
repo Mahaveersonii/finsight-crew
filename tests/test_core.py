@@ -259,3 +259,35 @@ def test_fact_check_catches_contradicted_numbers(monkeypatch):
     bad = crew.fact_check({"ticker": "ITC.NS", "rationale": "Composite score of 72, price below intrinsic value, in an uptrend."})
     assert len(bad) == 3
     assert crew.fact_check({"ticker": "ITC.NS", "rationale": "Composite 55; price is above intrinsic value; downtrend."}) == []
+
+
+def test_short_price_fetch_never_overwrites_long_history(monkeypatch):
+    import pandas as pd
+    import yfinance
+    from finsight.tools import market_data as md
+    idx = pd.date_range("2024-01-01", periods=500, freq="B")
+    long_df = pd.DataFrame({"Open": 1.0, "High": 1.0, "Low": 1.0, "Close": 1.0, "Volume": 1}, index=idx)
+
+    class Fake:
+        def __init__(self, t): pass
+        def history(self, period, auto_adjust=True):
+            return (long_df if period == "2y" else long_df.iloc[-5:]).tz_localize("UTC")
+    monkeypatch.setattr(yfinance, "Ticker", Fake)
+    md.get_price_history("ZZZ", "2y")
+    md.get_price_history("ZZZ", "5d")          # the 15-minute price check
+    class Down:
+        def __init__(self, t): raise ConnectionError("outage")
+    monkeypatch.setattr(yfinance, "Ticker", Down)
+    df = md.get_price_history("ZZZ", "2y")     # Yahoo down during a crew run
+    assert len(df) == 500 and df.attrs["stale"]
+
+
+def test_market_hours_gate():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from finsight.scheduler import market_open
+    ny = ZoneInfo("America/New_York")      # tests run with MARKET=US
+    assert market_open(datetime(2026, 9, 30, 11, 0, tzinfo=ny))        # Wednesday, session
+    assert market_open(datetime(2026, 9, 30, 16, 15, tzinfo=ny))       # grace after close
+    assert not market_open(datetime(2026, 9, 30, 20, 0, tzinfo=ny))    # evening
+    assert not market_open(datetime(2026, 10, 3, 11, 0, tzinfo=ny))    # Saturday

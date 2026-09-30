@@ -28,10 +28,16 @@ def _cache_path(name: str):
 # Prices
 # ---------------------------------------------------------------------------
 
+_PERIOD_DAYS = {"5d": 5, "1mo": 21, "3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "5y": 1260, "10y": 2520, "max": 10**6}
+
+
 def get_price_history(ticker: str, period: str = "2y", run_id=None) -> pd.DataFrame:
-    """Daily OHLCV. Falls back to the last cached copy if Yahoo fails."""
+    """Daily OHLCV. Falls back to cached data if Yahoo fails.
+
+    Each period has its own cache file: the 15-minute price check fetches only 5 days, and a
+    shared file would let that overwrite the 2-year history the agents fall back on."""
     ticker = ticker.upper()
-    cache = _cache_path(f"prices_{ticker}.pkl")
+    cache = _cache_path(f"prices_{ticker}_{period}.pkl")
     try:
         import yfinance as yf
 
@@ -42,11 +48,17 @@ def get_price_history(ticker: str, period: str = "2y", run_id=None) -> pd.DataFr
         df.to_pickle(cache)
         return df
     except Exception as exc:  # noqa: BLE001
-        db.log_event("data_fallback", "prices:yahoo->cache", f"{ticker}: {exc}", run_id)
-        if cache.exists():
-            df = pd.read_pickle(cache)
-            df.attrs["stale"] = True
-            return df
+        db.log_event("data_fallback", "prices:yahoo->cache", f"{ticker} ({period}): {exc}", run_id)
+        # Best cached copy: the requested period, else the longest one we have (trimmed to the period).
+        want = _PERIOD_DAYS.get(period, 504)
+        candidates = sorted(config.CACHE_DIR.glob(f"prices_{ticker}_*.pkl"),
+                            key=lambda p: (p != cache, -len(pd.read_pickle(p))))
+        for path in candidates:
+            df = pd.read_pickle(path)
+            if len(df) >= min(want, 60) or path == cache:
+                df = df.iloc[-want:].copy()
+                df.attrs["stale"] = True
+                return df
         raise RuntimeError(f"No price data available for {ticker}") from exc
 
 

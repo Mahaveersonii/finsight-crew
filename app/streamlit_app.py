@@ -27,6 +27,35 @@ FLAG = {"US": "🇺🇸", "IN": "🇮🇳"}
 st.set_page_config(page_title=f"FinSight Crew · {MK['name']}", page_icon="📈", layout="wide")
 
 
+TZ_LABEL = {"America/New_York": "New York time", "Asia/Kolkata": "IST"}[MK["timezone"]]
+STATUS_WORDS = {"executed": "✅ traded", "no_action": "no trade", "vetoed": "⛔ blocked", "analysis_only": "analysis only"}
+
+
+def local_time(df, *cols):
+    """Stored timestamps are UTC; show them in the market's own timezone."""
+    for c in cols:
+        if c in df:
+            df[c] = pd.to_datetime(df[c]).dt.tz_localize("UTC").dt.tz_convert(MK["timezone"]).dt.strftime("%d %b %H:%M")
+    return df
+
+
+def money_short(x):
+    """Compact form for metric tiles: ₹1.00 Cr / ₹10.50 L in India, $100.6K / $1.20M in the US."""
+    if x is None:
+        return "–"
+    if MK["currency"] == "INR":
+        if abs(x) >= 1e7:
+            return f"{CUR}{x / 1e7:.2f} Cr"
+        if abs(x) >= 1e5:
+            return f"{CUR}{x / 1e5:.2f} L"
+        return money(x)
+    if abs(x) >= 1e6:
+        return f"{CUR}{x / 1e6:.2f}M"
+    if abs(x) >= 1e4:
+        return f"{CUR}{x / 1e3:.1f}K"
+    return money(x)
+
+
 def money(x, dec=0):
     """$1,234,567 for the US; ₹12,34,567 (lakh/crore grouping) for India."""
     if x is None:
@@ -162,9 +191,13 @@ with tab_run:
         k[1].metric("Stop-loss", money(sig['stop_loss'], 2))
         k[2].metric("Take-profit", money(sig['take_profit'], 2))
         k[3].metric("Shares", (ex.get("plan") or {}).get("shares", 0) if ex["status"] == "executed" else 0)
-        k[4].metric("Execution", ex["status"])
-        if ex.get("reason"):
-            st.info(f"Risk engine: {ex['reason']}")
+        k[4].metric("Execution", STATUS_WORDS.get(ex["status"], ex["status"]))
+        if ex["status"] == "no_action":
+            st.info("No trade placed: the decision was HOLD." if sig["action"] == "HOLD" else f"No trade placed: {ex.get('reason')}")
+        elif ex.get("reason"):
+            st.warning(f"Risk engine: {ex['reason']}")
+        if sig.get("policy_override"):
+            st.warning(f"Policy check: {sig['policy_override']}")
         st.markdown(f"**Rationale.** {sig['rationale']}")
         st.markdown("**Key risks:** " + " · ".join(sig.get("key_risks", [])))
         st.markdown(f"**{DOC} citations:** " + " ".join(f"`{c}`" for c in sig.get("citations", [])))
@@ -182,22 +215,26 @@ with tab_run:
 with tab_port:
     if st.button("↻ Mark to market now"):
         out = broker.mark_to_market()
-        st.success(f"Equity {money(out['snapshot']['equity'], 2)} · exits: {out['exits'] or 'none'}")
+        exits = ", ".join(f"{t} ({r.replace('_', '-')}, P&L {money(pnl)})" for t, r, pnl in out["exits"]) or "none"
+        st.success(f"Equity {money(out['snapshot']['equity'], 2)} · automatic exits: {exits}")
     summ = broker.portfolio_summary()
     start = config.STARTING_CASH
     c = st.columns(4)
-    c[0].metric("Equity", money(summ['equity']), f"{(summ['equity'] / start - 1):.2%}")
-    c[1].metric("Cash", money(summ['cash']))
+    c[0].metric("Equity", money_short(summ['equity']), f"{(summ['equity'] / start - 1):.2%}", help=money(summ['equity'], 2))
+    c[1].metric("Cash", money_short(summ['cash']), help=money(summ['cash'], 2))
     c[2].metric("Open positions", len(summ["positions"]))
     c[3].metric("Invested", f"{1 - summ['cash'] / summ['equity']:.0%}")
 
     snaps = pd.DataFrame(db.fetch_all("select ts, equity, benchmark from snapshots order by ts"))
     if len(snaps) > 1 and snaps["benchmark"].notna().any():
+        snaps["ts"] = pd.to_datetime(snaps["ts"]).dt.tz_localize("UTC").dt.tz_convert(MK["timezone"])
         b0 = snaps["benchmark"].dropna().iloc[0]
         snaps["Portfolio"] = snaps["equity"] / start * 100
         snaps[BENCH] = snaps["benchmark"] / b0 * 100
-        st.plotly_chart(px.line(snaps, x="ts", y=["Portfolio", BENCH], title=f"Growth of 100 (portfolio vs {BENCH})"),
-                        width="stretch")
+        fig = px.line(snaps, x="ts", y=["Portfolio", BENCH], title=f"Growth of 100 (portfolio vs {BENCH})",
+                      labels={"ts": f"Time ({TZ_LABEL})", "value": "Value (start = 100)", "variable": ""})
+        fig.update_layout(legend={"orientation": "h", "y": -0.25})
+        st.plotly_chart(fig, width="stretch")
 
     left, right = st.columns([3, 2])
     pos = pd.DataFrame(db.fetch_all("select * from positions"))
@@ -211,13 +248,21 @@ with tab_port:
     else:
         left.info("No open positions yet - run the crew on a few tickers.")
 
-    st.markdown("#### Signals")
+    st.markdown(f"#### Signals · times in {TZ_LABEL}")
     sigs = pd.DataFrame(db.fetch_all(
         "select ts, ticker, action, confidence, price, stop_loss, shares, status, rationale from signals order by ts desc limit 50"))
-    st.dataframe(sigs, hide_index=True, width="stretch")
-    st.markdown("#### Trades")
-    st.dataframe(pd.DataFrame(db.fetch_all("select * from trades order by ts desc limit 50")), hide_index=True,
-                 width="stretch")
+    if sigs.empty:
+        st.info("No signals yet.")
+    else:
+        sigs["status"] = sigs["status"].map(lambda v: STATUS_WORDS.get(v, v))
+        st.dataframe(local_time(sigs, "ts"), hide_index=True, width="stretch")
+    st.markdown(f"#### Trades · times in {TZ_LABEL}")
+    trades_df = pd.DataFrame(db.fetch_all(
+        "select ts, ticker, side, shares, price, reason, realized_pnl from trades order by ts desc limit 50"))
+    if trades_df.empty:
+        st.info("No trades yet. Every signal so far was HOLD or was blocked by the risk rules.")
+    else:
+        st.dataframe(local_time(trades_df, "ts"), hide_index=True, width="stretch")
 
 
 # ---------------------------------------------------------------------------
@@ -309,9 +354,10 @@ with tab_bt:
 # Agent ops
 # ---------------------------------------------------------------------------
 with tab_ops:
-    runs = pd.DataFrame(db.fetch_all(
-        "select id, ticker, started_at, model, status, attempts, duration_s from runs order by id desc limit 50"))
-    ev = pd.DataFrame(db.fetch_all("select ts, run_id, kind, name, duration_ms, detail from events order by id desc limit 500"))
+    runs = local_time(pd.DataFrame(db.fetch_all(
+        "select id, ticker, started_at, model, status, attempts, duration_s from runs order by id desc limit 50")), "started_at")
+    ev = local_time(pd.DataFrame(db.fetch_all(
+        "select ts, run_id, kind, name, duration_ms, detail from events order by id desc limit 500")), "ts")
     c = st.columns(5)
     c[0].metric("Crew runs", len(runs))
     done = runs[runs["status"] != "running"] if len(runs) else runs
@@ -324,9 +370,9 @@ with tab_ops:
         tc = ev[ev["kind"] == "tool_call"].groupby("name")["duration_ms"].agg(["count", "mean"]).reset_index()
         l.plotly_chart(px.bar(tc, x="name", y="count", title="Tool calls by tool"), width="stretch")
         r.plotly_chart(px.histogram(ev, x="kind", title="Events by type"), width="stretch")
-        st.markdown("#### Event log (tool calls, fallbacks, guardrails, vetoes)")
+        st.markdown(f"#### Event log (tool calls, fallbacks, guardrails, vetoes) · times in {TZ_LABEL}")
         st.dataframe(ev, hide_index=True, width="stretch", height=320)
-    st.markdown("#### Runs")
+    st.markdown(f"#### Runs · times in {TZ_LABEL}")
     st.dataframe(runs, hide_index=True, width="stretch")
     if len(runs):
         rid = st.selectbox("Open full report for run", runs["id"])

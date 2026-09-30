@@ -328,7 +328,7 @@
   {
    "id": 7,
    "type": "piechart",
-   "title": "Allocation by position",
+   "title": "Allocation (positions + cash)",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "${market}"
@@ -349,7 +349,7 @@
      "rawQuery": true,
      "editorMode": "code",
      "format": "table",
-     "rawSql": "select ticker as metric, shares*last_price as value from positions"
+     "rawSql": "select ticker as metric, shares*last_price as value from positions union all (select 'Cash' as metric, cash as value from snapshots order by ts desc limit 1)"
     }
    ],
    "options": {

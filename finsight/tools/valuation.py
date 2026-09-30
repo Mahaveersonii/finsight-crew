@@ -9,6 +9,7 @@ from .. import config
 
 # Market assumptions (see markets.py): US = 10y Treasury 4.3%, ERP 5.5%, terminal 2.5%;
 # India = 10y G-sec 6.5%, ERP 7%, terminal 5%.
+UNIT, UNIT_SIZE = config.M["big_unit"]   # "bn" (1e9) for the US, "crore" (1e7) for India
 RISK_FREE = config.M["risk_free"]
 EQUITY_RISK_PREMIUM = config.M["equity_risk_premium"]
 TERMINAL_GROWTH = config.M["terminal_growth"]
@@ -97,7 +98,7 @@ def dcf(fcf_base: float, growth: float, discount: float, shares: float,
         g = growth + (TERMINAL_GROWTH - growth) * (year - 1) / years
         fcf *= 1 + g
         disc = fcf / (1 + discount) ** year
-        flows.append(round(fcf / 1e9, 2))
+        flows.append(round(fcf / UNIT_SIZE, 2))
         pv += disc
     terminal = fcf * (1 + TERMINAL_GROWTH) / (discount - TERMINAL_GROWTH)
     pv_terminal = terminal / (1 + discount) ** years
@@ -105,9 +106,9 @@ def dcf(fcf_base: float, growth: float, discount: float, shares: float,
     equity = enterprise + (cash or 0) - (debt or 0)
     return {
         "intrinsic_value_per_share": _r(equity / shares) if shares else None,
-        "enterprise_value_bn": _r(enterprise / 1e9, 1),
+        f"enterprise_value_{UNIT}": _r(enterprise / UNIT_SIZE, 1),
         "terminal_share_of_value_pct": _r(pv_terminal / enterprise * 100, 1),
-        "projected_fcf_bn": flows,
+        f"projected_fcf_{UNIT}": flows,
     }
 
 

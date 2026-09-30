@@ -12,6 +12,7 @@ MARKETS = {
         "flag": "US",
         "currency": "USD",
         "symbol": "$",
+        "big_unit": ("bn", 1e9),
         "benchmark": "SPY",
         "benchmark_name": "SPY",
         "watchlist": ["AAPL", "MSFT", "NVDA", "JPM", "XOM", "JNJ"],
@@ -25,6 +26,7 @@ MARKETS = {
         # Scheduler: run the crew after the close, local exchange time.
         "timezone": "America/New_York",
         "crew_time": (16, 30),
+        "market_hours": ((9, 30), (16, 0)),   # NYSE regular session, New York time
         # RAG corpus.
         "corpus": "sec",
         "doc_label": "10-K",
@@ -39,6 +41,7 @@ MARKETS = {
         "flag": "IN",
         "currency": "INR",
         "symbol": "₹",
+        "big_unit": ("crore", 1e7),  # Indian convention: 1 crore = 10 million
         "benchmark": "^NSEI",
         "benchmark_name": "NIFTY 50",
         "watchlist": ["WIPRO.NS", "ITC.NS", "SUNPHARMA.NS", "EICHERMOT.NS", "BHARTIARTL.NS", "ASIANPAINT.NS"],
@@ -51,6 +54,7 @@ MARKETS = {
         "cost_of_equity_band": (0.10, 0.17),
         "timezone": "Asia/Kolkata",
         "crew_time": (16, 0),  # NSE closes 15:30 IST
+        "market_hours": ((9, 15), (15, 30)),  # NSE regular session, IST
         "corpus": "pdf",
         "doc_label": "AR",
         "doc_name": "company annual report",

@@ -100,7 +100,8 @@ def get_market_snapshot(ticker: str) -> str:
     t = _clean_ticker(ticker)
     f = fundamentals(t)
     snap = {"ticker": t, "company": f.get("longName"), "sector": f.get("sector"), "industry": f.get("industry"),
-            "market_cap_bn": round(f["marketCap"] / 1e9, 1) if f.get("marketCap") else None,
+            f"market_cap_{config.M['big_unit'][0]}": round(f["marketCap"] / config.M["big_unit"][1], 1) if f.get("marketCap") else None,
+            "currency": config.M["currency"],
             "52w_high": f.get("fiftyTwoWeekHigh"), "52w_low": f.get("fiftyTwoWeekLow"), **tech(t)}
     return json.dumps(snap)
 
@@ -125,7 +126,8 @@ def get_fundamentals(ticker: str) -> str:
     for k in keep:
         v = f.get(k)
         if isinstance(v, (int, float)) and abs(v) >= 1e6:
-            v = f"{v / 1e9:.2f}bn"
+            unit, size = config.M["big_unit"]
+            v = f"{config.M['symbol']}{v / size:,.2f} {unit}"
         elif isinstance(v, float):
             v = round(v, 4)
         out[k] = v

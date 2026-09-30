@@ -3,6 +3,7 @@
     python scripts/run_crew.py AAPL            # analyse + paper-trade one ticker
     python scripts/run_crew.py AAPL MSFT NVDA  # several tickers
     python scripts/run_crew.py --dry-run AAPL  # analyse only, no trade
+    MARKET=IN python scripts/run_crew.py ITC   # India (NSE symbol; ".NS" is added for you)
 """
 import json
 import logging

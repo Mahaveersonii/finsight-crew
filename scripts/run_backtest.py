@@ -2,6 +2,7 @@
 
     python scripts/run_backtest.py
     python scripts/run_backtest.py AAPL MSFT NVDA
+    MARKET=IN python scripts/run_backtest.py   # India watchlist vs NIFTY 50
 """
 import json
 import sys

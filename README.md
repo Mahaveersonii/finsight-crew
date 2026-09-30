@@ -153,7 +153,7 @@ ollama pull nomic-embed-text
 ollama create finsight-qwen3 -f Modelfile      # tuned temperature, 16K context, system prompt
 
 # 2. Config
-cp .env.example .env                            # set SEC_IDENTITY to your name + email
+cp .env.example .env                            # optional: SEC_IDENTITY, cloud API keys
 
 # 3. Full stack: Postgres + Streamlit + scheduler + Grafana
 docker compose up -d --build

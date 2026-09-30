@@ -34,7 +34,8 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # --- SEC -------------------------------------------------------------------
 # SEC asks every client to identify itself with a name + email.
-SEC_IDENTITY = os.getenv("SEC_IDENTITY", "FinSight Crew student-project@example.com")
+# SEC rejects anonymous clients, so a blank value falls back to a generic, non-personal identity.
+SEC_IDENTITY = os.getenv("SEC_IDENTITY", "").strip() or "FinSight Crew student-project@example.com"
 
 # --- Paper trading ---------------------------------------------------------
 STARTING_CASH = float(os.getenv("STARTING_CASH", "100000"))

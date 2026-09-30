@@ -1,0 +1,483 @@
+{
+ "uid": "finsight",
+ "title": "FinSight Crew \u2014 Portfolio & Agent Ops",
+ "timezone": "browser",
+ "refresh": "30s",
+ "time": {
+  "from": "now-30d",
+  "to": "now"
+ },
+ "schemaVersion": 39,
+ "version": 1,
+ "panels": [
+  {
+   "id": 1,
+   "type": "stat",
+   "title": "Portfolio equity",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "time_series",
+     "rawSql": "select ts as time, equity from snapshots order by ts"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD",
+     "decimals": 2
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "Return since inception",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 0,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "time_series",
+     "rawSql": "select ts as time, (equity/100000.0-1)*100 as return_pct from snapshots order by ts"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "decimals": 2
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Open positions",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select count(*) as positions from positions"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 2
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "Crew success rate",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select 100.0*avg(case when status='success' then 1 else 0 end) as success from runs where status<>'running'"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percent",
+     "decimals": 2
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 5,
+   "type": "stat",
+   "title": "Recoveries (fallbacks, retries, overrides)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 20,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select count(*) as recoveries from events where kind in ('llm_fallback','data_fallback','guardrail_retry','risk_override','risk_veto','auto_exit')"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 2
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "Portfolio vs SPY (growth of 100)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 4,
+    "w": 14,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "time_series",
+     "rawSql": "select ts as time, equity/100000.0*100 as \"Portfolio\", benchmark / first_value(benchmark) over (order by ts) * 100 as \"SPY\" from snapshots where benchmark is not null order by ts"
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "type": "piechart",
+   "title": "Allocation by position",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 14,
+    "y": 4,
+    "w": 5,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select ticker as metric, shares*last_price as value from positions"
+    }
+   ],
+   "options": {
+    "reduceOptions": {
+     "values": true,
+     "calcs": []
+    },
+    "pieType": "donut",
+    "legend": {
+     "displayMode": "list",
+     "placement": "right"
+    }
+   }
+  },
+  {
+   "id": 8,
+   "type": "piechart",
+   "title": "Signals by action",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 19,
+    "y": 4,
+    "w": 5,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select action as metric, count(*) as value from signals group by action"
+    }
+   ],
+   "options": {
+    "reduceOptions": {
+     "values": true,
+     "calcs": []
+    },
+    "pieType": "donut",
+    "legend": {
+     "displayMode": "list",
+     "placement": "right"
+    }
+   }
+  },
+  {
+   "id": 9,
+   "type": "barchart",
+   "title": "Tool calls & avg latency (ms)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 13,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select name as tool, count(*) as calls, round(avg(duration_ms)::numeric,0) as avg_ms from events where kind='tool_call' group by name order by calls desc"
+    }
+   ]
+  },
+  {
+   "id": 10,
+   "type": "barchart",
+   "title": "Agent events by type",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 13,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select kind, count(*) as n from events group by kind order by n desc"
+    }
+   ]
+  },
+  {
+   "id": 11,
+   "type": "table",
+   "title": "Latest signals",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 21,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select ts as time, ticker, action, round(confidence::numeric,2) as confidence, price, stop_loss, take_profit, shares, status, left(rationale,160) as rationale from signals order by ts desc limit 20"
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "type": "table",
+   "title": "Error recovery log",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 29,
+    "w": 14,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select ts as time, run_id, kind, name, left(detail,200) as detail from events where kind in ('llm_fallback','data_fallback','guardrail_retry','risk_override','risk_veto','auto_exit','error') order by ts desc limit 30"
+    }
+   ]
+  },
+  {
+   "id": 13,
+   "type": "table",
+   "title": "Crew runs",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "finsight-pg"
+   },
+   "gridPos": {
+    "x": 14,
+    "y": 29,
+    "w": 10,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "finsight-pg"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select id, ticker, started_at as time, model, status, attempts, duration_s from runs order by id desc limit 30"
+    }
+   ]
+  }
+ ],
+ "tags": [
+  "finsight"
+ ]
+}

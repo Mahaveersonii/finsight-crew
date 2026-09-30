@@ -1,0 +1,78 @@
+# FinSight Crew - full stack
+#
+#   docker compose up -d --build
+#
+#   Streamlit  http://localhost:8502   (control room; 8501 = local dev copy)
+#   Grafana    http://localhost:3001   (admin / finsight)
+#   Postgres   localhost:5432          (finsight / finsight)
+#
+# Ollama runs natively on the host (not in Docker) so it can use the Apple-silicon
+# GPU via Metal; containers reach it at host.docker.internal:11434.
+
+x-app: &app
+  build: .
+  image: finsight-crew:latest
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgresql+psycopg://finsight:finsight@postgres:5432/finsight
+    OLLAMA_BASE_URL: http://host.docker.internal:11434
+    FINSIGHT_DATA_DIR: /data
+    CREWAI_TRACING_ENABLED: "false"
+    ANONYMIZED_TELEMETRY: "False"
+  volumes:
+    - ./data:/data                 # ChromaDB vectors + market-data cache, shared with local runs
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  depends_on:
+    postgres:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: finsight
+      POSTGRES_PASSWORD: finsight
+      POSTGRES_DB: finsight
+    ports: ["5432:5432"]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finsight"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    <<: *app
+    command: streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    ports: ["8502:8501"]   # 8502 on the host so it can run next to a local dev copy on 8501
+
+  scheduler:
+    <<: *app
+    command: python -m finsight.scheduler
+    healthcheck:
+      disable: true   # no web server in this container
+
+  grafana:
+    image: grafana/grafana-oss:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: finsight
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/finsight.json
+      GF_AUTH_ANONYMOUS_ENABLED: "true"      # read-only viewing for the demo; editing still needs admin
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    ports: ["3001:3000"]
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on: [postgres]
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  grafana_data:

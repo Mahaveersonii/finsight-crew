@@ -1,0 +1,527 @@
+{
+ "n_questions": 18,
+ "results": {
+  "vector only (alpha=1.0)": {
+   "metrics": {
+    "hit@1": 0.5,
+    "hit@3": 0.611,
+    "hit@5": 0.667,
+    "mrr@5": 0.557
+   },
+   "rows": [
+    {
+     "ticker": "AAPL",
+     "question": "Who actually builds Apple's hardware and where?",
+     "relevant_if_contains": [
+      "outsourcing partners"
+     ],
+     "rank": null,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #0]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How could EU competition rules force changes to the App Store?",
+     "relevant_if_contains": [
+      "Digital Markets Act"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Risk Factors \u00b7 #55]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How do import duties and trade policy affect Apple?",
+     "relevant_if_contains": [
+      "tariff"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 MD&A \u00b7 #1]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How are Apple's results exposed to exchange-rate movements?",
+     "relevant_if_contains": [
+      "foreign currency"
+     ],
+     "rank": null,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #19]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How does Apple return capital to shareholders by buying back stock?",
+     "relevant_if_contains": [
+      "repurchase"
+     ],
+     "rank": 2,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #19]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "Which geographic segments does Apple report, including China?",
+     "relevant_if_contains": [
+      "Greater China"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #4]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "Which foundry manufactures NVIDIA's chips?",
+     "relevant_if_contains": [
+      "TSMC",
+      "Taiwan Semiconductor"
+     ],
+     "rank": null,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #9]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "How do US government restrictions on selling advanced chips abroad affect NVIDIA?",
+     "relevant_if_contains": [
+      "export control"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #37]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "How concentrated is NVIDIA's revenue among its largest buyers?",
+     "relevant_if_contains": [
+      "customer represented"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 MD&A \u00b7 #27]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What is NVIDIA's newest GPU architecture for AI data centers?",
+     "relevant_if_contains": [
+      "Blackwell"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #14]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What software platform locks developers into NVIDIA GPUs?",
+     "relevant_if_contains": [
+      "CUDA"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #12]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What factors could squeeze NVIDIA's profitability per unit sold?",
+     "relevant_if_contains": [
+      "gross margin"
+     ],
+     "rank": null,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 MD&A \u00b7 #0]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What baby powder lawsuits does Johnson & Johnson face?",
+     "relevant_if_contains": [
+      "talc"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Risk Factors \u00b7 #11]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What are J&J's two business segments?",
+     "relevant_if_contains": [
+      "Innovative Medicine",
+      "MedTech"
+     ],
+     "rank": 3,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 MD&A \u00b7 #0]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "How does US drug price negotiation legislation affect J&J?",
+     "relevant_if_contains": [
+      "Inflation Reduction Act"
+     ],
+     "rank": 5,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Business \u00b7 #24]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What happens when J&J's blockbuster psoriasis drug loses exclusivity?",
+     "relevant_if_contains": [
+      "STELARA"
+     ],
+     "rank": null,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 MD&A \u00b7 #21]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What happened with the separation of the consumer health business?",
+     "relevant_if_contains": [
+      "Kenvue"
+     ],
+     "rank": null,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Risk Factors \u00b7 #35]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "Which multiple myeloma therapy is a key growth product?",
+     "relevant_if_contains": [
+      "DARZALEX"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Business \u00b7 #2]"
+    }
+   ]
+  },
+  "hybrid (alpha=0.75)": {
+   "metrics": {
+    "hit@1": 0.5,
+    "hit@3": 0.778,
+    "hit@5": 0.778,
+    "mrr@5": 0.611
+   },
+   "rows": [
+    {
+     "ticker": "AAPL",
+     "question": "Who actually builds Apple's hardware and where?",
+     "relevant_if_contains": [
+      "outsourcing partners"
+     ],
+     "rank": null,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #4]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How could EU competition rules force changes to the App Store?",
+     "relevant_if_contains": [
+      "Digital Markets Act"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Risk Factors \u00b7 #55]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How do import duties and trade policy affect Apple?",
+     "relevant_if_contains": [
+      "tariff"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 MD&A \u00b7 #1]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How are Apple's results exposed to exchange-rate movements?",
+     "relevant_if_contains": [
+      "foreign currency"
+     ],
+     "rank": 3,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Risk Factors \u00b7 #68]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How does Apple return capital to shareholders by buying back stock?",
+     "relevant_if_contains": [
+      "repurchase"
+     ],
+     "rank": 2,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #19]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "Which geographic segments does Apple report, including China?",
+     "relevant_if_contains": [
+      "Greater China"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #4]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "Which foundry manufactures NVIDIA's chips?",
+     "relevant_if_contains": [
+      "TSMC",
+      "Taiwan Semiconductor"
+     ],
+     "rank": null,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #12]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "How do US government restrictions on selling advanced chips abroad affect NVIDIA?",
+     "relevant_if_contains": [
+      "export control"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #37]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "How concentrated is NVIDIA's revenue among its largest buyers?",
+     "relevant_if_contains": [
+      "customer represented"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 MD&A \u00b7 #27]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What is NVIDIA's newest GPU architecture for AI data centers?",
+     "relevant_if_contains": [
+      "Blackwell"
+     ],
+     "rank": 2,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #3]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What software platform locks developers into NVIDIA GPUs?",
+     "relevant_if_contains": [
+      "CUDA"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #3]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What factors could squeeze NVIDIA's profitability per unit sold?",
+     "relevant_if_contains": [
+      "gross margin"
+     ],
+     "rank": null,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 MD&A \u00b7 #0]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What baby powder lawsuits does Johnson & Johnson face?",
+     "relevant_if_contains": [
+      "talc"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Risk Factors \u00b7 #11]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What are J&J's two business segments?",
+     "relevant_if_contains": [
+      "Innovative Medicine",
+      "MedTech"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Business \u00b7 #1]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "How does US drug price negotiation legislation affect J&J?",
+     "relevant_if_contains": [
+      "Inflation Reduction Act"
+     ],
+     "rank": 3,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 MD&A \u00b7 #69]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What happens when J&J's blockbuster psoriasis drug loses exclusivity?",
+     "relevant_if_contains": [
+      "STELARA"
+     ],
+     "rank": 3,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Risk Factors \u00b7 #2]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What happened with the separation of the consumer health business?",
+     "relevant_if_contains": [
+      "Kenvue"
+     ],
+     "rank": null,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 MD&A \u00b7 #1]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "Which multiple myeloma therapy is a key growth product?",
+     "relevant_if_contains": [
+      "DARZALEX"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Business \u00b7 #2]"
+    }
+   ]
+  },
+  "hybrid (alpha=0.5)": {
+   "metrics": {
+    "hit@1": 0.444,
+    "hit@3": 0.722,
+    "hit@5": 0.722,
+    "mrr@5": 0.556
+   },
+   "rows": [
+    {
+     "ticker": "AAPL",
+     "question": "Who actually builds Apple's hardware and where?",
+     "relevant_if_contains": [
+      "outsourcing partners"
+     ],
+     "rank": null,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #4]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How could EU competition rules force changes to the App Store?",
+     "relevant_if_contains": [
+      "Digital Markets Act"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Risk Factors \u00b7 #55]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How do import duties and trade policy affect Apple?",
+     "relevant_if_contains": [
+      "tariff"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 MD&A \u00b7 #1]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How are Apple's results exposed to exchange-rate movements?",
+     "relevant_if_contains": [
+      "foreign currency"
+     ],
+     "rank": 3,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Risk Factors \u00b7 #68]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "How does Apple return capital to shareholders by buying back stock?",
+     "relevant_if_contains": [
+      "repurchase"
+     ],
+     "rank": null,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #19]"
+    },
+    {
+     "ticker": "AAPL",
+     "question": "Which geographic segments does Apple report, including China?",
+     "relevant_if_contains": [
+      "Greater China"
+     ],
+     "rank": 1,
+     "top_citation": "[AAPL 10-K FY2025 \u00b7 Business \u00b7 #4]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "Which foundry manufactures NVIDIA's chips?",
+     "relevant_if_contains": [
+      "TSMC",
+      "Taiwan Semiconductor"
+     ],
+     "rank": null,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #12]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "How do US government restrictions on selling advanced chips abroad affect NVIDIA?",
+     "relevant_if_contains": [
+      "export control"
+     ],
+     "rank": 2,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Risk Factors \u00b7 #43]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "How concentrated is NVIDIA's revenue among its largest buyers?",
+     "relevant_if_contains": [
+      "customer represented"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 MD&A \u00b7 #27]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What is NVIDIA's newest GPU architecture for AI data centers?",
+     "relevant_if_contains": [
+      "Blackwell"
+     ],
+     "rank": 2,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #3]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What software platform locks developers into NVIDIA GPUs?",
+     "relevant_if_contains": [
+      "CUDA"
+     ],
+     "rank": 1,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 Business \u00b7 #3]"
+    },
+    {
+     "ticker": "NVDA",
+     "question": "What factors could squeeze NVIDIA's profitability per unit sold?",
+     "relevant_if_contains": [
+      "gross margin"
+     ],
+     "rank": null,
+     "top_citation": "[NVDA 10-K FY2026 \u00b7 MD&A \u00b7 #0]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What baby powder lawsuits does Johnson & Johnson face?",
+     "relevant_if_contains": [
+      "talc"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Risk Factors \u00b7 #11]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What are J&J's two business segments?",
+     "relevant_if_contains": [
+      "Innovative Medicine",
+      "MedTech"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Business \u00b7 #1]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "How does US drug price negotiation legislation affect J&J?",
+     "relevant_if_contains": [
+      "Inflation Reduction Act"
+     ],
+     "rank": 3,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 MD&A \u00b7 #69]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What happens when J&J's blockbuster psoriasis drug loses exclusivity?",
+     "relevant_if_contains": [
+      "STELARA"
+     ],
+     "rank": 3,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Risk Factors \u00b7 #2]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "What happened with the separation of the consumer health business?",
+     "relevant_if_contains": [
+      "Kenvue"
+     ],
+     "rank": null,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 MD&A \u00b7 #1]"
+    },
+    {
+     "ticker": "JNJ",
+     "question": "Which multiple myeloma therapy is a key growth product?",
+     "relevant_if_contains": [
+      "DARZALEX"
+     ],
+     "rank": 1,
+     "top_citation": "[JNJ 10-K FY2025 \u00b7 Business \u00b7 #2]"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,20 @@
+[
+ {"ticker": "AAPL", "question": "Who actually builds Apple's hardware and where?", "relevant_if_contains": ["outsourcing partners"]},
+ {"ticker": "AAPL", "question": "How could EU competition rules force changes to the App Store?", "relevant_if_contains": ["Digital Markets Act"]},
+ {"ticker": "AAPL", "question": "How do import duties and trade policy affect Apple?", "relevant_if_contains": ["tariff"]},
+ {"ticker": "AAPL", "question": "How are Apple's results exposed to exchange-rate movements?", "relevant_if_contains": ["foreign currency"]},
+ {"ticker": "AAPL", "question": "How does Apple return capital to shareholders by buying back stock?", "relevant_if_contains": ["repurchase"]},
+ {"ticker": "AAPL", "question": "Which geographic segments does Apple report, including China?", "relevant_if_contains": ["Greater China"]},
+ {"ticker": "NVDA", "question": "Which foundry manufactures NVIDIA's chips?", "relevant_if_contains": ["TSMC", "Taiwan Semiconductor"]},
+ {"ticker": "NVDA", "question": "How do US government restrictions on selling advanced chips abroad affect NVIDIA?", "relevant_if_contains": ["export control"]},
+ {"ticker": "NVDA", "question": "How concentrated is NVIDIA's revenue among its largest buyers?", "relevant_if_contains": ["customer represented"]},
+ {"ticker": "NVDA", "question": "What is NVIDIA's newest GPU architecture for AI data centers?", "relevant_if_contains": ["Blackwell"]},
+ {"ticker": "NVDA", "question": "What software platform locks developers into NVIDIA GPUs?", "relevant_if_contains": ["CUDA"]},
+ {"ticker": "NVDA", "question": "What factors could squeeze NVIDIA's profitability per unit sold?", "relevant_if_contains": ["gross margin"]},
+ {"ticker": "JNJ", "question": "What baby powder lawsuits does Johnson & Johnson face?", "relevant_if_contains": ["talc"]},
+ {"ticker": "JNJ", "question": "What are J&J's two business segments?", "relevant_if_contains": ["Innovative Medicine", "MedTech"]},
+ {"ticker": "JNJ", "question": "How does US drug price negotiation legislation affect J&J?", "relevant_if_contains": ["Inflation Reduction Act"]},
+ {"ticker": "JNJ", "question": "What happens when J&J's blockbuster psoriasis drug loses exclusivity?", "relevant_if_contains": ["STELARA"]},
+ {"ticker": "JNJ", "question": "What happened with the separation of the consumer health business?", "relevant_if_contains": ["Kenvue"]},
+ {"ticker": "JNJ", "question": "Which multiple myeloma therapy is a key growth product?", "relevant_if_contains": ["DARZALEX"]}
+]

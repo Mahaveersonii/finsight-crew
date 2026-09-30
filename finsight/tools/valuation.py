@@ -224,3 +224,17 @@ def valuation_report(fund: dict, fcf_history: list, tech: dict) -> dict:
     out["analyst_consensus"] = {"target_mean_price": target, "upside_pct": upside, "rating": fund.get("recommendationKey")}
     out["quant_score"] = quant_score(r, tech, (out["dcf"] or {}).get("margin_of_safety_pct"), upside)
     return out
+
+
+def full_report(fund: dict, fcf_history: list, prices: pd.DataFrame, bench: pd.DataFrame = None) -> dict:
+    """The single valuation path used by both the agents' tool and the Streamlit header, so the
+    numbers on screen always match what the crew saw. Beta is measured against the market's own index."""
+    tech = technicals(prices)
+    f = dict(fund)
+    b = beta_vs(prices, bench) if bench is not None and len(bench) else None
+    if b is not None:
+        f["beta"] = b
+    rep = valuation_report(f, fcf_history, tech)
+    rep["assumptions"]["beta"] = f.get("beta")
+    rep["assumptions"]["beta_vs"] = config.M["benchmark_name"] if b is not None else "data vendor"
+    return rep

@@ -76,26 +76,17 @@ def tech(ticker):
     return _cached(("tech", ticker), lambda: val.technicals(prices(ticker)))
 
 
-def beta(ticker):
-    def calc():
-        try:
-            return val.beta_vs(prices(ticker), md.get_price_history(config.M["benchmark"], run_id=RUN["run_id"]))
-        except Exception:  # noqa: BLE001 - fall back to the data vendor's beta
-            return None
-    return _cached(("beta", ticker), calc)
+def benchmark_prices():
+    try:
+        return _cached(("bench",), lambda: md.get_price_history(config.M["benchmark"], run_id=RUN["run_id"]))
+    except Exception:  # noqa: BLE001 - without the index, fall back to the data vendor's beta
+        return None
 
 
 def valuation(ticker):
-    def build():
-        f = dict(fundamentals(ticker))
-        b = beta(ticker)
-        if b is not None:
-            f["beta"] = b
-        rep = val.valuation_report(f, _cached(("fcf", ticker), lambda: md.get_fcf_history(ticker)), tech(ticker))
-        rep["assumptions"]["beta"] = f.get("beta")
-        rep["assumptions"]["beta_vs"] = config.M["benchmark_name"] if b is not None else "data vendor"
-        return rep
-    return _cached(("val", ticker), build)
+    return _cached(("val", ticker), lambda: val.full_report(
+        fundamentals(ticker), _cached(("fcf", ticker), lambda: md.get_fcf_history(ticker)),
+        prices(ticker), benchmark_prices()))
 
 
 # --- Data Extractor tools ---------------------------------------------------

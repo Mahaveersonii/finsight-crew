@@ -4,6 +4,8 @@
 """
 import json
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -80,8 +82,12 @@ def _overview(tk):
     here can never reset the state of a crew run in progress."""
     from finsight.tools import market_data as md, valuation as val
     df = md.get_price_history(tk)
-    tech = val.technicals(df)
-    return val.valuation_report(md.get_fundamentals(tk), md.get_fcf_history(tk), tech), tech, df.reset_index()
+    try:
+        bench = md.get_price_history(MK["benchmark"])
+    except Exception:  # noqa: BLE001
+        bench = None
+    rep = val.full_report(md.get_fundamentals(tk), md.get_fcf_history(tk), df, bench)
+    return rep, val.technicals(df), df.reset_index()
 
 
 tab_run, tab_port, tab_rag, tab_bt, tab_ops = st.tabs(
@@ -106,7 +112,7 @@ with tab_run:
             m[1].metric("P/E (ttm)", v["ratios"]["pe_trailing"])
             m[2].metric("EV/EBITDA", v["ratios"]["ev_to_ebitda"])
             m[3].metric("FCF yield", f"{v['ratios']['fcf_yield_pct']:.1f}%" if v["ratios"]["fcf_yield_pct"] else "–")
-            m[4].metric("12m return", f"{tc['return_12m_pct']}%")
+            m[4].metric("12m return", f"{tc['return_12m_pct']:+.0f}%" if tc["return_12m_pct"] is not None else "–")
             m[5].metric("Quant score", v["quant_score"]["composite"])
             px_df["SMA50"] = px_df["Close"].rolling(50).mean()
             px_df["SMA200"] = px_df["Close"].rolling(200).mean()
@@ -122,21 +128,29 @@ with tab_run:
     if go_btn:
         with st.status(f"Crew analysing {ticker}…", expanded=True) as status:
             log_box = st.empty()
-            lines = []
+            lines, out = [], {}
 
-            def on_event(msg):
-                lines.append(msg)
-                try:  # only works on the script thread; worker-thread messages show on the next update
-                    log_box.code("\n".join(lines[-25:]), language=None)
-                except Exception:  # noqa: BLE001
-                    pass
+            # The crew runs on a worker thread and only appends messages; this (script) thread
+            # redraws the log every second, so every tool call shows up live.
+            def work():
+                try:
+                    out["res"] = pipeline.analyze(ticker, on_event=lines.append, execute_trade=trade)
+                except Exception as exc:  # noqa: BLE001
+                    out["err"] = exc
 
-            try:
-                res = pipeline.analyze(ticker, on_event=on_event, execute_trade=trade)
+            worker = threading.Thread(target=work, daemon=True)
+            worker.start()
+            t0 = time.time()
+            while worker.is_alive():
+                log_box.code("\n".join(lines[-25:] + [f"… working ({time.time() - t0:.0f}s)"]), language=None)
+                time.sleep(1)
+            log_box.code("\n".join(lines[-25:]), language=None)
+            if "res" in out:
+                res = out["res"]
                 status.update(label=f"Done in {res['seconds']}s on {res['model']}", state="complete")
                 st.session_state["last_result"] = res
-            except Exception as exc:  # noqa: BLE001
-                status.update(label=f"Failed: {exc}", state="error")
+            else:
+                status.update(label=f"Failed: {out.get('err')}", state="error")
 
     res = st.session_state.get("last_result")
     if res:

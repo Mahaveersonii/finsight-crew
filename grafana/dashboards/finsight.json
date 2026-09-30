@@ -4,7 +4,7 @@
  "timezone": "browser",
  "refresh": "30s",
  "time": {
-  "from": "now-30d",
+  "from": "now-24h",
   "to": "now"
  },
  "schemaVersion": 39,
@@ -276,7 +276,54 @@
      "format": "time_series",
      "rawSql": "select ts as time, equity/100000.0*100 as \"Portfolio\", benchmark / first_value(benchmark) over (order by ts) * 100 as \"SPY\" from snapshots where benchmark is not null order by ts"
     }
-   ]
+   ],
+   "description": "Growth of 100 since the first snapshot. Snapshots are taken every 15 minutes by the scheduler; outside US market hours prices do not move, so both lines stay flat.",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 2,
+     "custom": {
+      "showPoints": "always",
+      "pointSize": 5,
+      "lineWidth": 2,
+      "spanNulls": true,
+      "axisSoftMin": 99,
+      "axisSoftMax": 101
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "SPY"
+      },
+      "properties": [
+       {
+        "id": "custom.lineStyle",
+        "value": {
+         "fill": "dash",
+         "dash": [
+          10,
+          10
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "calcs": [
+      "last"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
   },
   {
    "id": 7,

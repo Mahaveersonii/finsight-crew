@@ -6,6 +6,7 @@
 """
 import json
 import logging
+import re
 import threading
 import time
 
@@ -33,6 +34,21 @@ def analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
         return _analyze(ticker, on_event, execute_trade)
     finally:
         _RUN_LOCK.release()
+
+
+_TAG = re.compile(r"\[[A-Z.\-]+ 10-K FY\d{4} · [^\]]+ · #\d+\]")
+
+
+def _check_report_citations(report: str, run_id, emit) -> str:
+    """Flag any 10-K citation in the analyst report that was not actually retrieved in this run."""
+    real = T.RUN["citations"]
+    bad = sorted({c for c in _TAG.findall(report) if c not in real})
+    for c in bad:
+        report = report.replace(c, f"{c} ⚠️unverified")
+    if bad:
+        db.log_event("citation_unverified", "analyst_report", ", ".join(bad), run_id)
+        emit(f"⚠️ {len(bad)} analyst citation(s) not found in retrieved passages - flagged in the report")
+    return report
 
 
 def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
@@ -76,6 +92,7 @@ def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
         raise RuntimeError("All models in the fallback chain failed")
 
     outputs = [t.raw for t in result.tasks_output]
+    outputs[1] = _check_report_citations(outputs[1], run_id, emit)
     sig = extract_json(outputs[-1])
 
     # 3. Enforce the fund's decision rules deterministically (the LLM can misapply them).

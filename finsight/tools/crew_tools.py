@@ -77,7 +77,8 @@ def tech(ticker):
 
 
 def valuation(ticker):
-    return _cached(("val", ticker), lambda: val.valuation_report(fundamentals(ticker), md.get_fcf_history(ticker), tech(ticker)))
+    return _cached(("val", ticker), lambda: val.valuation_report(
+        fundamentals(ticker), _cached(("fcf", ticker), lambda: md.get_fcf_history(ticker)), tech(ticker)))
 
 
 # --- Data Extractor tools ---------------------------------------------------
@@ -108,6 +109,10 @@ def get_fundamentals(ticker: str) -> str:
             "earningsGrowth", "grossMargins", "operatingMargins", "profitMargins", "returnOnEquity", "freeCashflow",
             "totalCash", "totalDebt", "debtToEquity", "trailingPE", "forwardPE", "enterpriseToEbitda", "beta",
             "dividendYield", "targetMeanPrice", "recommendationKey", "source"]
+    f = dict(f)
+    fcf_hist = _cached(("fcf", t), lambda: md.get_fcf_history(t))
+    if fcf_hist:  # same reported FCF the valuation model uses (Yahoo's field is a levered estimate)
+        f["freeCashflow"] = fcf_hist[-1]
     out = {}
     for k in keep:
         v = f.get(k)

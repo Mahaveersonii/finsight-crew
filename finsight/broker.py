@@ -85,6 +85,9 @@ def plan_trade(ticker: str, price: float, atr: float, sector: str) -> dict:
          ("available cash", shares_by_cash), ("sector cap", shares_by_sector)],
         key=lambda x: x[1],
     )[0]
+    if 0 < shares * price < eq * config.MIN_POSITION_PCT:
+        binding = f"{binding} (leaves < {config.MIN_POSITION_PCT:.0%} minimum position)"
+        shares = 0
     return {
         "ticker": ticker, "entry_price": round(price, 2), "stop_loss": stop,
         "take_profit": round(price + 2 * (price - stop), 2),  # 2R target

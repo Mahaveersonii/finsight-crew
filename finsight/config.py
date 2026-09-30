@@ -41,6 +41,7 @@ STARTING_CASH = float(os.getenv("STARTING_CASH", "100000"))
 RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", "0.01"))      # 1% of equity at risk per trade
 MAX_POSITION_PCT = float(os.getenv("MAX_POSITION_PCT", "0.10"))  # max 10% of equity in one stock
 MAX_SECTOR_PCT = float(os.getenv("MAX_SECTOR_PCT", "0.30"))      # max 30% of equity in one sector
+MIN_POSITION_PCT = float(os.getenv("MIN_POSITION_PCT", "0.01"))  # skip trades smaller than 1% of equity
 ATR_STOP_MULT = float(os.getenv("ATR_STOP_MULT", "2.0"))         # stop = entry - 2 x ATR(14)
 MIN_CONFIDENCE = float(os.getenv("MIN_CONFIDENCE", "0.55"))      # below this a BUY becomes HOLD
 

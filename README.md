@@ -104,11 +104,12 @@ Hybrid re-ranking lifts Hit@3 from 61% to 78%. The misses (e.g. "who builds Appl
 | Failure | Recovery | Where to see it |
 |---|---|---|
 | Primary LLM down / errors | Fallback chain `finsight-qwen3 → qwen3:8b → llama3.2 → Groq → Gemini` | `events.kind = llm_fallback` |
-| Yahoo Finance fails | SEC EDGAR XBRL facts → last cached copy (flagged stale) | `data_fallback` |
+| Yahoo Finance fails | SEC EDGAR XBRL facts (freshest annual value across tags, nothing older than 18 months, incomplete filings rejected) → last cached copy (flagged stale) | `data_fallback` |
 | Postgres down | Automatic SQLite fallback | sidebar "Database" |
 | PM returns malformed JSON / skips its sizing tool / no citations | CrewAI **guardrail** rejects with a specific message; agent retries (max 3) | `guardrail_retry` |
 | LLM proposes a wrong stop-loss or size | Deterministic risk engine overrides it | `risk_override` |
 | PM cites a passage it never retrieved | Guardrail checks every citation against the passages actually returned by `search_sec_filings` in this run; invented tags are dropped, none valid → retry | `guardrail_retry` |
+| Analyst cites a passage it never retrieved | Report citations are checked after the run and flagged `⚠️unverified` | `citation_unverified` |
 | LLM misapplies the fund rules (e.g. BUY with composite < 70) | Deterministic policy check downgrades to HOLD | `risk_veto` (`policy:composite<70`) |
 | Signal breaches risk limits / low confidence | Trade vetoed | `risk_veto` |
 | Price hits stop / target between crew runs | Scheduler exits automatically every 15 min | `auto_exit` |
@@ -125,7 +126,7 @@ Hybrid re-ranking lifts Hit@3 from 61% to 78%. The misses (e.g. "who builds Appl
 * **Valuation:** P/E, EV/EBITDA, FCF yield, ROE, leverage; 10-year two-stage DCF (bear / base / bull) using reported free cash flow and a CAPM cost of equity; **reverse DCF** giving the FCF growth the current price implies.
 * **Quant score (0–100):** value 35% (DCF margin of safety, FCF yield, analyst upside) + quality 35% (ROE, net margin, leverage) + momentum 30% (12-month return, trend, RSI).
 * **Decision rules:** BUY if the verdict is Attractive (composite ≥ 70) and the risk engine allows shares; SELL if held and Unattractive (or composite < 50); else HOLD.
-* **Risk engine:** 1% of equity at risk per trade · stop = entry − 2 × ATR(14) · take-profit = 2R · ≤ 10% per position · ≤ 30% per sector · BUY needs confidence ≥ 0.55 · long-only.
+* **Risk engine:** 1% of equity at risk per trade · stop = entry − 2 × ATR(14) · take-profit = 2R · ≤ 10% per position · ≤ 30% per sector · no positions smaller than 1% of equity · BUY needs confidence ≥ 0.55 · long-only.
 
 ### Backtest (`python scripts/run_backtest.py`)
 
@@ -176,6 +177,7 @@ python -m finsight.scheduler --once       # one pass over the watchlist
 python eval/run_rag_eval.py               # RAG evaluation
 python scripts/run_backtest.py            # backtest
 python scripts/reset_portfolio.py --yes   # clean slate before a demo
+pip install pytest && pytest -q           # 22 offline tests: valuation, chunking, guardrail, risk engine, fallbacks
 ```
 
 Ollama runs on the host rather than in Docker so it can use the Apple-silicon GPU (Metal); containers reach it through `host.docker.internal:11434`.

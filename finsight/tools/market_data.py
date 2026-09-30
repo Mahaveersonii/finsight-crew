@@ -94,17 +94,26 @@ def _cik_for(ticker: str) -> str:
     return mapping[ticker]
 
 
-def _latest_annual(facts: dict, *concepts):
-    """Most recent 10-K value among a list of candidate us-gaap concepts."""
-    gaap = facts.get("facts", {}).get("us-gaap", {})
+ANNUAL_FORMS = {"10-K", "10-K/A", "20-F", "40-F"}
+MAX_AGE_DAYS = 550  # ignore annual figures older than ~18 months
+
+
+def _latest_annual(facts: dict, *concepts, namespace: str = "us-gaap"):
+    """Most recent annual value across *all* candidate concepts (companies switch tags
+    over time, e.g. Apple moved from `Revenues` to `RevenueFromContract...`), rejecting
+    stale figures so a 2013 debt number can never masquerade as current."""
+    ns = facts.get("facts", {}).get(namespace, {})
+    best = None
     for concept in concepts:
-        units = gaap.get(concept, {}).get("units", {})
-        for unit_vals in units.values():
-            annual = [u for u in unit_vals if u.get("form") == "10-K" and u.get("fp") == "FY"]
-            if annual:
-                annual.sort(key=lambda u: u.get("end", ""))
-                return annual[-1]["val"]
-    return None
+        for unit_vals in ns.get(concept, {}).get("units", {}).values():
+            for u in unit_vals:
+                annual = u.get("form") in ANNUAL_FORMS and u.get("fp") == "FY"
+                if (annual or namespace == "dei") and u.get("end") and (best is None or u["end"] > best["end"]):
+                    best = u
+    if not best:
+        return None
+    age = (datetime.now() - datetime.strptime(best["end"], "%Y-%m-%d")).days
+    return best["val"] if age <= MAX_AGE_DAYS else None
 
 
 def _from_sec(ticker: str) -> dict:
@@ -112,28 +121,35 @@ def _from_sec(ticker: str) -> dict:
     facts = requests.get(
         f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json", headers=SEC_HEADERS, timeout=30
     ).json()
-    revenue = _latest_annual(facts, "Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet")
-    net_income = _latest_annual(facts, "NetIncomeLoss")
+    revenue = _latest_annual(facts, "Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax",
+                             "RevenueFromContractWithCustomerIncludingAssessedTax", "SalesRevenueNet")
+    net_income = _latest_annual(facts, "NetIncomeLoss", "ProfitLoss")
     ocf = _latest_annual(facts, "NetCashProvidedByUsedInOperatingActivities")
-    capex = _latest_annual(facts, "PaymentsToAcquirePropertyPlantAndEquipment")
-    shares = _latest_annual(facts, "WeightedAverageNumberOfDilutedSharesOutstanding", "CommonStockSharesOutstanding")
-    cash = _latest_annual(facts, "CashAndCashEquivalentsAtCarryingValue")
+    capex = _latest_annual(facts, "PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets")
+    shares = (_latest_annual(facts, "EntityCommonStockSharesOutstanding", namespace="dei")
+              or _latest_annual(facts, "WeightedAverageNumberOfDilutedSharesOutstanding"))
+    cash = _latest_annual(facts, "CashAndCashEquivalentsAtCarryingValue",
+                          "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents")
     debt = _latest_annual(facts, "LongTermDebt", "LongTermDebtNoncurrent")
+    if not revenue or not shares:
+        # Incomplete / stale filings (e.g. a newly reorganised holding company with no 10-K yet):
+        # better to fall through to the cache than return half-empty numbers.
+        raise ValueError(f"SEC XBRL has no current annual revenue/shares for {ticker}")
     price = latest_price(ticker)
-    mcap = price * shares if shares else None
+    mcap = price * shares
     return {
         "longName": facts.get("entityName"),
         "currentPrice": price,
         "marketCap": mcap,
         "totalRevenue": revenue,
-        "profitMargins": (net_income / revenue) if revenue and net_income else None,
-        "trailingPE": (mcap / net_income) if mcap and net_income and net_income > 0 else None,
+        "profitMargins": (net_income / revenue) if net_income is not None else None,
+        "trailingPE": (mcap / net_income) if net_income and net_income > 0 else None,
         "operatingCashflow": ocf,
-        "freeCashflow": (ocf - capex) if ocf and capex else ocf,
+        "freeCashflow": (ocf - capex) if ocf is not None and capex is not None else None,
         "sharesOutstanding": shares,
         "totalCash": cash,
         "totalDebt": debt,
-        "enterpriseValue": (mcap + (debt or 0) - (cash or 0)) if mcap else None,
+        "enterpriseValue": mcap + (debt or 0) - (cash or 0),
         "source": "SEC EDGAR XBRL (fallback)",
     }
 

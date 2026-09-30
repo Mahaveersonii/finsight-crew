@@ -13,3 +13,4 @@ numpy
 requests
 APScheduler==3.11.3
 python-dotenv
+pymupdf==1.26.7

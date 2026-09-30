@@ -2,7 +2,9 @@
 #
 #   docker compose up -d --build
 #
-#   Streamlit  http://localhost:8502   (control room; 8501 = local dev copy)
+#   Streamlit  http://localhost:8502   US market   (8501 = local dev copy)
+#   Streamlit  http://localhost:8503   India market
+#   Market switch: sidebar button in Streamlit, "Market" dropdown in Grafana
 #   Grafana    http://localhost:3001   (admin / finsight)
 #   Postgres   localhost:5432          (finsight / finsight)
 #
@@ -56,6 +58,32 @@ services:
     command: python -m finsight.scheduler
     healthcheck:
       disable: true   # no web server in this container
+
+  # --- India market: same image, MARKET=IN, own database (finsight_in) and report library ---
+  app-in:
+    <<: *app
+    environment:
+      MARKET: IN
+      DATABASE_URL: postgresql+psycopg://finsight:finsight@postgres:5432/finsight
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      FINSIGHT_DATA_DIR: /data
+      CREWAI_TRACING_ENABLED: "false"
+      ANONYMIZED_TELEMETRY: "False"
+    command: streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    ports: ["8503:8501"]
+
+  scheduler-in:
+    <<: *app
+    environment:
+      MARKET: IN
+      DATABASE_URL: postgresql+psycopg://finsight:finsight@postgres:5432/finsight
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      FINSIGHT_DATA_DIR: /data
+      CREWAI_TRACING_ENABLED: "false"
+      ANONYMIZED_TELEMETRY: "False"
+    command: python -m finsight.scheduler
+    healthcheck:
+      disable: true
 
   grafana:
     image: grafana/grafana-oss:11.2.0

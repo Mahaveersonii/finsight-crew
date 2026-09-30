@@ -203,3 +203,59 @@ def test_tiny_leftover_positions_are_blocked():
     broker.execute({"ticker": "T3", "action": "BUY", "price": 95, "confidence": 0.8}, "Tech", 5.0)
     plan = broker.plan_trade("T4", price=40.0, atr=2.0, sector="Tech")
     assert plan["shares"] == 0 and "minimum position" in plan["binding_constraint"]
+
+
+# --- India market ------------------------------------------------------------
+
+def test_every_india_watchlist_ticker_has_an_annual_report():
+    from finsight.markets import MARKETS
+    m = MARKETS["IN"]
+    assert set(m["watchlist"]) <= set(m["reports"])
+    assert all(r["url"].startswith("https://") and r["fy"].isdigit() for r in m["reports"].values())
+
+
+def test_citation_formats_and_regex_cover_both_markets():
+    from finsight.pipeline import _TAG
+    from finsight.rag import citation
+    us = citation({"form": "10-K", "ticker": "AAPL", "fiscal_year": "2025", "section": "Risk Factors", "chunk": 4})
+    india = citation({"form": "AR", "ticker": "ITC.NS", "fiscal_year": "2026", "section": "MD&A", "page": 67, "chunk": 93})
+    assert us == "[AAPL 10-K FY2025 · Risk Factors · #4]"
+    assert india == "[ITC.NS AR FY2026 · MD&A · p67 #93]"
+    assert _TAG.findall(f"x {us} y {india}") == [us, india]
+
+
+def test_pdf_page_classifier():
+    from finsight.pdf_reports import _is_boilerplate, classify
+    assert classify("Key risks and mitigation. " + "risk " * 6) == "Risk Management"
+    assert classify("Industry outlook: demand growth, revenue and margin expansion, market share gains, "
+                    "economic growth, segment profit, EBITDA margin, industry demand outlook.") == "MD&A"
+    assert classify("Our purpose and brands.") == "Business & Strategy"
+    assert _is_boilerplate("", "Mr. Sanjiv Puri (63), DIN: 00280529, is the Chairman")
+
+
+def test_india_config_in_a_fresh_process():
+    import subprocess
+    code = ("from finsight import config as c;"
+            "print(c.MARKET, c.normalize_ticker('itc'), c.normalize_ticker('^NSEI'), c.SQLITE_URL.endswith('finsight_in.db'),"
+            " c.DATABASE_URL.endswith('/finsight_in'))")
+    env = {**os.environ, "MARKET": "IN", "DATABASE_URL": "postgresql+psycopg://u:p@h:5432/finsight"}
+    out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True,
+                         cwd=str(Path(__file__).resolve().parent.parent)).stdout.split()
+    assert out == ["IN", "ITC.NS", "^NSEI", "True", "True"]
+
+
+def test_guardrail_accepts_citations_without_brackets():
+    tag = "[ITC.NS AR FY2026 · MD&A · p67 #92]"
+    T.RUN["called"] = ["plan_position"]
+    T.RUN["citations"] = {tag}
+    ok, value = validate_signal(_out({**GOOD, "citations": ["ITC.NS AR FY2026 · MD&A · p67 #92", " [ITC.NS  AR FY2026 · MD&A · p67 #92 ] "]}))
+    assert ok and json.loads(value)["citations"] == [tag, tag]
+
+
+def test_fact_check_catches_contradicted_numbers(monkeypatch):
+    from finsight import crew
+    monkeypatch.setattr(crew.T, "valuation", lambda t: {"quant_score": {"composite": 55}, "dcf": {"margin_of_safety_pct": -28.5}})
+    monkeypatch.setattr(crew.T, "tech", lambda t: {"trend": "downtrend"})
+    bad = crew.fact_check({"ticker": "ITC.NS", "rationale": "Composite score of 72, price below intrinsic value, in an uptrend."})
+    assert len(bad) == 3
+    assert crew.fact_check({"ticker": "ITC.NS", "rationale": "Composite 55; price is above intrinsic value; downtrend."}) == []

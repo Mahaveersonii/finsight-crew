@@ -5,9 +5,14 @@ import math
 import numpy as np
 import pandas as pd
 
-RISK_FREE = 0.043         # ~10y US Treasury
-EQUITY_RISK_PREMIUM = 0.055
-TERMINAL_GROWTH = 0.025
+from .. import config
+
+# Market assumptions (see markets.py): US = 10y Treasury 4.3%, ERP 5.5%, terminal 2.5%;
+# India = 10y G-sec 6.5%, ERP 7%, terminal 5%.
+RISK_FREE = config.M["risk_free"]
+EQUITY_RISK_PREMIUM = config.M["equity_risk_premium"]
+TERMINAL_GROWTH = config.M["terminal_growth"]
+COE_LOW, COE_HIGH = config.M["cost_of_equity_band"]
 
 
 def _r(x, n=2):
@@ -62,13 +67,24 @@ def technicals(df: pd.DataFrame) -> dict:
     }
 
 
+def beta_vs(prices: pd.DataFrame, bench: pd.DataFrame):
+    """Beta against the market's own index from 2 years of weekly returns (Yahoo's beta for Indian
+    stocks is measured against the S&P 500 and can come out near zero or negative)."""
+    a = prices["Close"].resample("W-FRI").last().pct_change()
+    b = bench["Close"].resample("W-FRI").last().pct_change()
+    df = pd.concat([a, b], axis=1, keys=["s", "m"]).dropna().iloc[-104:]
+    if len(df) < 52 or df["m"].var() == 0:
+        return None
+    return round(float(df["s"].cov(df["m"]) / df["m"].var()), 2)
+
+
 # ---------------------------------------------------------------------------
 # DCF
 # ---------------------------------------------------------------------------
 
 def cost_of_equity(beta) -> float:
     beta = beta if beta and 0.3 < beta < 3 else 1.0
-    return min(max(RISK_FREE + beta * EQUITY_RISK_PREMIUM, 0.07), 0.13)
+    return min(max(RISK_FREE + beta * EQUITY_RISK_PREMIUM, COE_LOW), COE_HIGH)
 
 
 def dcf(fcf_base: float, growth: float, discount: float, shares: float,
@@ -161,7 +177,12 @@ def valuation_report(fund: dict, fcf_history: list, tech: dict) -> dict:
                         "terminal_growth_pct": TERMINAL_GROWTH * 100},
     }
 
-    if fcf_now and fcf_now > 0 and shares:
+    currency_mismatch = (fund.get("financialCurrency") and fund.get("currency")
+                         and fund["financialCurrency"] != fund["currency"])
+    if currency_mismatch:
+        out["dcf"] = {"note": f"DCF not meaningful: statements are in {fund['financialCurrency']} but the share "
+                              f"trades in {fund['currency']}."}
+    elif fcf_now and fcf_now > 0 and shares:
         cash, debt = fund.get("totalCash") or 0, fund.get("totalDebt") or 0
         scenarios = {
             "bear": dcf(fcf_now, growth - 0.04, wacc + 0.01, shares, cash, debt),

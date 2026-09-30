@@ -16,7 +16,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from finsight import broker, config, db, pipeline, rag  # noqa: E402
 from finsight.llm import model_chain  # noqa: E402
 
-st.set_page_config(page_title="FinSight Crew", page_icon="📈", layout="wide")
+MK = config.M
+CUR = MK["symbol"]
+DOC = "10-K" if MK["corpus"] == "sec" else "Annual Report"
+BENCH = MK["benchmark_name"]
+FLAG = {"US": "🇺🇸", "IN": "🇮🇳"}
+
+st.set_page_config(page_title=f"FinSight Crew · {MK['name']}", page_icon="📈", layout="wide")
+
+
+def money(x, dec=0):
+    """$1,234,567 for the US; ₹12,34,567 (lakh/crore grouping) for India."""
+    if x is None:
+        return "–"
+    if MK["currency"] != "INR":
+        return f"{CUR}{x:,.{dec}f}"
+    neg, x = x < 0, abs(x)
+    whole, frac = f"{x:.{dec}f}".split(".") if dec else (f"{x:.0f}", "")
+    head, tail = whole[:-3], whole[-3:]
+    groups = []
+    while len(head) > 2:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    if head:
+        groups.insert(0, head)
+    body = ",".join(groups + [tail]) if groups else tail
+    return f"{'-' if neg else ''}{CUR}{body}{'.' + frac if frac else ''}"
 
 
 # ---------------------------------------------------------------------------
@@ -24,7 +49,12 @@ st.set_page_config(page_title="FinSight Crew", page_icon="📈", layout="wide")
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.title("📈 FinSight Crew")
-    st.caption("Autonomous financial research & paper trading · CrewAI + Ollama + RAG over SEC 10-Ks")
+    st.caption(f"Autonomous financial research & paper trading · CrewAI + Ollama + RAG over {MK['doc_name']}s")
+    st.markdown(f"**Market:** {FLAG[config.MARKET]} {MK['name']} · {MK['currency']} · benchmark {BENCH}")
+    for code, url in config.APP_URLS.items():
+        if code != config.MARKET:
+            from finsight.markets import MARKETS
+            st.link_button(f"Switch to {FLAG[code]} {MARKETS[code]['name']} →", url, width="stretch")
     chain = model_chain()
     st.markdown("**LLM fallback chain**")
     for i, m in enumerate(chain):
@@ -55,7 +85,7 @@ def _overview(tk):
 
 
 tab_run, tab_port, tab_rag, tab_bt, tab_ops = st.tabs(
-    ["🧠 Run the Crew", "💼 Portfolio", "📚 Ask the 10-K", "📈 Backtest & RAG Eval", "🔍 Agent Ops"])
+    ["🧠 Run the Crew", "💼 Portfolio", f"📚 Ask the {DOC}", "📈 Backtest & RAG Eval", "🔍 Agent Ops"])
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +93,8 @@ tab_run, tab_port, tab_rag, tab_bt, tab_ops = st.tabs(
 # ---------------------------------------------------------------------------
 with tab_run:
     c1, c2, c3 = st.columns([2, 1, 1])
-    ticker = c1.text_input("US ticker", value="MSFT", max_chars=8).strip().upper()
+    ticker = config.normalize_ticker(c1.text_input(f"{MK['name']} ticker (NSE symbol)" if config.MARKET == "IN" else "US ticker",
+                                                   value=config.WATCHLIST[0].replace(MK["ticker_suffix"], ""), max_chars=14))
     trade = c2.toggle("Execute paper trade", value=True)
     go_btn = c3.button("▶ Run analysis", type="primary", width="stretch", disabled=not chain)
 
@@ -71,7 +102,7 @@ with tab_run:
         try:
             v, tc, px_df = _overview(ticker)
             m = st.columns(6)
-            m[0].metric("Price", f"${v['price']:,.0f}")
+            m[0].metric("Price", money(v['price']))
             m[1].metric("P/E (ttm)", v["ratios"]["pe_trailing"])
             m[2].metric("EV/EBITDA", v["ratios"]["ev_to_ebitda"])
             m[3].metric("FCF yield", f"{v['ratios']['fcf_yield_pct']:.1f}%" if v["ratios"]["fcf_yield_pct"] else "–")
@@ -113,16 +144,16 @@ with tab_run:
         colour = {"BUY": "green", "SELL": "red", "HOLD": "orange"}[sig["action"]]
         st.markdown(f"## :{colour}[{sig['action']}] {sig['ticker']} · confidence {sig['confidence']:.0%}")
         k = st.columns(5)
-        k[0].metric("Entry", f"${sig['price']}")
-        k[1].metric("Stop-loss", f"${sig['stop_loss']}")
-        k[2].metric("Take-profit", f"${sig['take_profit']}")
+        k[0].metric("Entry", money(sig['price'], 2))
+        k[1].metric("Stop-loss", money(sig['stop_loss'], 2))
+        k[2].metric("Take-profit", money(sig['take_profit'], 2))
         k[3].metric("Shares", (ex.get("plan") or {}).get("shares", 0) if ex["status"] == "executed" else 0)
         k[4].metric("Execution", ex["status"])
         if ex.get("reason"):
             st.info(f"Risk engine: {ex['reason']}")
         st.markdown(f"**Rationale.** {sig['rationale']}")
         st.markdown("**Key risks:** " + " · ".join(sig.get("key_risks", [])))
-        st.markdown("**10-K citations:** " + " ".join(f"`{c}`" for c in sig.get("citations", [])))
+        st.markdown(f"**{DOC} citations:** " + " ".join(f"`{c}`" for c in sig.get("citations", [])))
         with st.expander("📄 Analyst report"):
             st.markdown(res["analyst_report"])
         with st.expander("📊 Data brief"):
@@ -137,12 +168,12 @@ with tab_run:
 with tab_port:
     if st.button("↻ Mark to market now"):
         out = broker.mark_to_market()
-        st.success(f"Equity ${out['snapshot']['equity']:,.2f} · exits: {out['exits'] or 'none'}")
+        st.success(f"Equity {money(out['snapshot']['equity'], 2)} · exits: {out['exits'] or 'none'}")
     summ = broker.portfolio_summary()
     start = config.STARTING_CASH
     c = st.columns(4)
-    c[0].metric("Equity", f"${summ['equity']:,.0f}", f"{(summ['equity'] / start - 1):.2%}")
-    c[1].metric("Cash", f"${summ['cash']:,.0f}")
+    c[0].metric("Equity", money(summ['equity']), f"{(summ['equity'] / start - 1):.2%}")
+    c[1].metric("Cash", money(summ['cash']))
     c[2].metric("Open positions", len(summ["positions"]))
     c[3].metric("Invested", f"{1 - summ['cash'] / summ['equity']:.0%}")
 
@@ -150,8 +181,8 @@ with tab_port:
     if len(snaps) > 1 and snaps["benchmark"].notna().any():
         b0 = snaps["benchmark"].dropna().iloc[0]
         snaps["Portfolio"] = snaps["equity"] / start * 100
-        snaps["SPY"] = snaps["benchmark"] / b0 * 100
-        st.plotly_chart(px.line(snaps, x="ts", y=["Portfolio", "SPY"], title="Growth of 100 (portfolio vs SPY)"),
+        snaps[BENCH] = snaps["benchmark"] / b0 * 100
+        st.plotly_chart(px.line(snaps, x="ts", y=["Portfolio", BENCH], title=f"Growth of 100 (portfolio vs {BENCH})"),
                         width="stretch")
 
     left, right = st.columns([3, 2])
@@ -179,14 +210,17 @@ with tab_port:
 # RAG
 # ---------------------------------------------------------------------------
 with tab_rag:
-    st.markdown("Ask questions answered **only** from the company's latest SEC 10-K, with citations.")
+    st.markdown(f"Ask questions answered **only** from the company's latest {MK['doc_name']}, with citations.")
     idx = rag.indexed_tickers()
     c1, c2 = st.columns([1, 3])
-    rt = c1.selectbox("Company", sorted(idx) or ["AAPL"])
-    new_t = c1.text_input("…or index a new ticker").strip().upper()
-    if new_t and c1.button("Index 10-K"):
-        with st.spinner(f"Downloading and embedding {new_t} 10-K…"):
-            st.success(rag.ingest_ticker(new_t))
+    rt = c1.selectbox("Company", sorted(idx) or config.WATCHLIST)
+    new_t = config.normalize_ticker(c1.text_input("…or index a new ticker"))
+    if new_t and c1.button(f"Index {DOC}"):
+        with st.spinner(f"Downloading and embedding the {new_t} {DOC}…"):
+            try:
+                st.success(rag.ingest_ticker(new_t))
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Could not index {new_t}: {exc}")
     q = c2.text_input("Question", value="What are the biggest risks management highlights?")
     if c2.button("Ask", type="primary") and q:
         with st.spinner("Retrieving and answering…"):
@@ -197,7 +231,9 @@ with tab_rag:
             with st.expander(f"{h['citation']} · score {h['score']} (semantic {h['semantic']})"):
                 st.write(h["text"])
                 if h.get("url"):
-                    st.markdown(f"[Open filing on SEC.gov]({h['url']})")
+                    link = h["url"] + (f"#page={h['page']}" if h.get("page") else "")
+                    where = f"page {h['page']} of the report" if h.get("page") else "the filing on SEC.gov"
+                    st.markdown(f"[Open {where}]({link})")
 
 
 # ---------------------------------------------------------------------------
@@ -215,14 +251,17 @@ with tab_bt:
     st.caption("Entry weekly when close > SMA50 > SMA200 and 40 ≤ RSI ≤ 70; exits on 2×ATR stop, 2R take-profit or "
                "close < SMA200; 1% risk sizing, ≤10% per position. Agents and fundamentals are not backtested "
                "(that would need historical fundamentals - look-ahead bias).")
-    bt_t = st.multiselect("Universe", config.WATCHLIST + ["AMZN", "GOOGL", "META", "KO", "PG", "CVX"], default=config.WATCHLIST)
+    extra = (["AMZN", "GOOGL", "META", "KO", "PG", "CVX"] if config.MARKET == "US"
+             else ["TCS.NS", "HINDUNILVR.NS", "MARUTI.NS", "LT.NS", "ULTRACEMCO.NS", "ONGC.NS"])
+    bt_t = st.multiselect("Universe", config.WATCHLIST + extra, default=config.WATCHLIST)
     if bt_t and st.button("Run backtest"):
         st.session_state["bt"] = _backtest(tuple(bt_t))
     if "bt" in st.session_state:
         summ, curves, trs = st.session_state["bt"]
         rows = []
-        for name in ("strategy", "spy_buy_hold", "equal_weight_buy_hold"):
-            rows.append({"": name.replace("_", " "), **summ[name]})
+        for name, label in (("strategy", "Strategy"), ("benchmark_buy_hold", f"{BENCH} buy & hold"),
+                            ("equal_weight_buy_hold", "Equal-weight buy & hold")):
+            rows.append({"": label, **summ[name]})
         st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
         c = st.columns(5)
         c[0].metric("Trades", summ["n_trades"])
@@ -236,10 +275,12 @@ with tab_bt:
 
     st.divider()
     st.markdown("#### RAG retrieval evaluation")
-    ev_path = Path(__file__).resolve().parent.parent / "eval" / "rag_eval_results.json"
+    ev_path = Path(__file__).resolve().parent.parent / "eval" / (
+        "rag_eval_results.json" if config.MARKET == "US" else f"rag_eval_results_{config.MARKET.lower()}.json")
     if ev_path.exists():
         ev_res = json.loads(ev_path.read_text())
-        st.caption(f"{ev_res['n_questions']} paraphrased questions over AAPL / NVDA / JNJ 10-Ks. "
+        st.caption(f"{ev_res['n_questions']} paraphrased questions over {', '.join(ev_res.get('tickers', ['AAPL', 'NVDA', 'JNJ']))} "
+                   f"{DOC}s. "
                    "A hit = a retrieved chunk contains the ground-truth fact. Run `python eval/run_rag_eval.py` to refresh.")
         mdf = pd.DataFrame([{"configuration": k, **v["metrics"]} for k, v in ev_res["results"].items()])
         st.dataframe(mdf, hide_index=True, width="stretch")

@@ -107,6 +107,20 @@ snapshots = Table(
 _engine = None
 
 
+def _ensure_database(url: str):
+    """Create the market's Postgres database on first use (e.g. finsight_in)."""
+    from sqlalchemy.engine import make_url
+    u = make_url(url)
+    admin = create_engine(u.set(database="postgres"), isolation_level="AUTOCOMMIT", pool_pre_ping=True)
+    try:
+        with admin.connect() as c:
+            if not c.execute(text("select 1 from pg_database where datname = :d"), {"d": u.database}).scalar():
+                c.execute(text(f'create database "{u.database}"'))
+                log.info("created database %s", u.database)
+    finally:
+        admin.dispose()
+
+
 def engine():
     """Return a cached engine. Try Postgres first, fall back to SQLite."""
     global _engine
@@ -114,6 +128,7 @@ def engine():
         return _engine
     if config.DATABASE_URL:
         try:
+            _ensure_database(config.DATABASE_URL)
             eng = create_engine(config.DATABASE_URL, pool_pre_ping=True)
             with eng.connect() as c:
                 c.execute(text("select 1"))

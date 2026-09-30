@@ -4,7 +4,8 @@ Each question is paraphrased so it does NOT contain the answer keyword; a retrie
 chunk counts as relevant if it contains one of `relevant_if_contains`.
 Metrics: Hit@1, Hit@3, Hit@5 and MRR@5, for pure vector search vs our hybrid re-rank.
 
-    python eval/run_rag_eval.py
+    python eval/run_rag_eval.py              # US (SEC 10-K) set
+    MARKET=IN python eval/run_rag_eval.py    # India (annual report) set
 """
 import json
 import sys
@@ -13,9 +14,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from finsight import rag  # noqa: E402
+from finsight import config, rag  # noqa: E402
 
-CONFIGS = {"vector only (alpha=1.0)": 1.0, "hybrid (alpha=0.75)": 0.75, "hybrid (alpha=0.5)": 0.5}
+SUFFIX = "" if config.MARKET == "US" else f"_{config.MARKET.lower()}"
+
+CONFIGS = {"vector only (alpha=1.0)": 1.0, "hybrid (alpha=0.9)": 0.9, "hybrid (alpha=0.75)": 0.75, "hybrid (alpha=0.5)": 0.5}
 
 
 def evaluate(alpha, items):
@@ -32,7 +35,7 @@ def evaluate(alpha, items):
 
 
 if __name__ == "__main__":
-    items = json.loads((ROOT / "eval" / "rag_eval_set.json").read_text())
+    items = json.loads((ROOT / "eval" / f"rag_eval_set{SUFFIX}.json").read_text())
     for t in {i["ticker"] for i in items}:
         rag.ingest_ticker(t)
     results = {}
@@ -45,6 +48,7 @@ if __name__ == "__main__":
     print("\nPer-question ranks (best config):")
     for r in results[best]["rows"]:
         print(f"  {str(r['rank']):>4}  {r['ticker']}  {r['question']}")
-    out = ROOT / "eval" / "rag_eval_results.json"
-    out.write_text(json.dumps({"n_questions": len(items), "results": results}, indent=1))
+    out = ROOT / "eval" / f"rag_eval_results{SUFFIX}.json"
+    tickers = sorted({i["ticker"] for i in items})
+    out.write_text(json.dumps({"market": config.MARKET, "n_questions": len(items), "tickers": tickers, "results": results}, indent=1))
     print(f"\nSaved {out}")

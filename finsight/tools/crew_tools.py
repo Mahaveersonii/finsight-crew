@@ -10,7 +10,7 @@ import time
 
 from crewai.tools import tool
 
-from .. import broker, db, rag
+from .. import broker, config, db, rag
 from . import market_data as md
 from . import valuation as val
 
@@ -59,7 +59,7 @@ def _logged(fn):
 
 
 def _clean_ticker(t: str) -> str:
-    return str(t).strip().strip("'\"").upper().split()[0]
+    return config.normalize_ticker(t)
 
 
 # --- shared data accessors (also used by the pipeline) ----------------------
@@ -76,9 +76,26 @@ def tech(ticker):
     return _cached(("tech", ticker), lambda: val.technicals(prices(ticker)))
 
 
+def beta(ticker):
+    def calc():
+        try:
+            return val.beta_vs(prices(ticker), md.get_price_history(config.M["benchmark"], run_id=RUN["run_id"]))
+        except Exception:  # noqa: BLE001 - fall back to the data vendor's beta
+            return None
+    return _cached(("beta", ticker), calc)
+
+
 def valuation(ticker):
-    return _cached(("val", ticker), lambda: val.valuation_report(
-        fundamentals(ticker), _cached(("fcf", ticker), lambda: md.get_fcf_history(ticker)), tech(ticker)))
+    def build():
+        f = dict(fundamentals(ticker))
+        b = beta(ticker)
+        if b is not None:
+            f["beta"] = b
+        rep = val.valuation_report(f, _cached(("fcf", ticker), lambda: md.get_fcf_history(ticker)), tech(ticker))
+        rep["assumptions"]["beta"] = f.get("beta")
+        rep["assumptions"]["beta_vs"] = config.M["benchmark_name"] if b is not None else "data vendor"
+        return rep
+    return _cached(("val", ticker), build)
 
 
 # --- Data Extractor tools ---------------------------------------------------
@@ -102,7 +119,7 @@ def get_market_snapshot(ticker: str) -> str:
 def get_fundamentals(ticker: str) -> str:
     """Company fundamentals for a US stock ticker: revenue, margins, growth, cash,
     debt, free cash flow, P/E, EV/EBITDA, beta and analyst target. Also reports
-    the data source used (Yahoo Finance, or SEC EDGAR as fallback)."""
+    the data source used (Yahoo Finance; SEC EDGAR or cache as fallback)."""
     t = _clean_ticker(ticker)
     f = fundamentals(t)
     keep = ["longName", "currentPrice", "marketCap", "enterpriseValue", "totalRevenue", "revenueGrowth",
@@ -136,11 +153,12 @@ def run_valuation(ticker: str) -> str:
     return json.dumps(valuation(t))
 
 
-@tool("search_sec_filings")
+@tool("search_annual_report")
 @_logged
-def search_sec_filings(ticker: str, question: str) -> str:
-    """Search the company's latest SEC 10-K annual report (Business, Risk Factors,
-    MD&A sections) and return the most relevant passages with citations.
+def search_annual_report(ticker: str, question: str) -> str:
+    """Search the company's latest annual report (US: SEC 10-K Business, Risk Factors,
+    MD&A; India: the company's annual report - strategy, risk management, MD&A pages)
+    and return the most relevant passages with citations.
     Use it for qualitative evidence: risks, competition, growth drivers, strategy,
     regulation, margins. Always quote the citation tag you use."""
     t = _clean_ticker(ticker)
@@ -189,5 +207,5 @@ def plan_position(ticker: str) -> str:
 
 
 EXTRACTOR_TOOLS = [get_market_snapshot, get_fundamentals]
-ANALYST_TOOLS = [run_valuation, search_sec_filings, get_past_decisions]
+ANALYST_TOOLS = [run_valuation, search_annual_report, get_past_decisions]
 PM_TOOLS = [get_portfolio_state, plan_position]

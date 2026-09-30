@@ -13,10 +13,10 @@
   {
    "id": 1,
    "type": "stat",
-   "title": "Portfolio equity",
+   "title": "Portfolio equity \u00b7 ${market}",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 0,
@@ -29,7 +29,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -39,8 +39,8 @@
    ],
    "fieldConfig": {
     "defaults": {
-     "unit": "currencyUSD",
-     "decimals": 2,
+     "unit": "short",
+     "decimals": 0,
      "color": {
       "mode": "fixed",
       "fixedColor": "#5794F2"
@@ -64,7 +64,7 @@
    "title": "Return since inception",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 6,
@@ -77,12 +77,12 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
      "format": "time_series",
-     "rawSql": "select ts as time, (equity/100000.0-1)*100 as return_pct from snapshots order by ts"
+     "rawSql": "select ts as time, (equity / first_value(equity) over (order by ts) - 1) * 100 as return_pct from snapshots order by ts"
     }
    ],
    "fieldConfig": {
@@ -112,7 +112,7 @@
    "title": "Open positions",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 12,
@@ -125,7 +125,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -160,7 +160,7 @@
    "title": "Crew success rate",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 16,
@@ -173,7 +173,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -208,7 +208,7 @@
    "title": "Recoveries (fallbacks, retries, overrides)",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 20,
@@ -221,7 +221,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -253,10 +253,10 @@
   {
    "id": 6,
    "type": "timeseries",
-   "title": "Portfolio vs SPY (growth of 100)",
+   "title": "Portfolio vs benchmark (growth of 100) \u00b7 ${market}",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 0,
@@ -269,12 +269,12 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
      "format": "time_series",
-     "rawSql": "select ts as time, equity/100000.0*100 as \"Portfolio\", benchmark / first_value(benchmark) over (order by ts) * 100 as \"SPY\" from snapshots where benchmark is not null order by ts"
+     "rawSql": "select ts as time, equity / first_value(equity) over (order by ts) * 100 as \"Portfolio\", benchmark / first_value(benchmark) over (order by ts) * 100 as \"Benchmark (SPY / NIFTY 50)\" from snapshots where benchmark is not null order by ts"
     }
    ],
    "description": "Growth of 100 since the first snapshot. Snapshots are taken every 15 minutes by the scheduler; outside US market hours prices do not move, so both lines stay flat.",
@@ -295,7 +295,7 @@
      {
       "matcher": {
        "id": "byName",
-       "options": "SPY"
+       "options": "Benchmark (SPY / NIFTY 50)"
       },
       "properties": [
        {
@@ -331,7 +331,7 @@
    "title": "Allocation by position",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 14,
@@ -344,7 +344,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -370,7 +370,7 @@
    "title": "Signals by action",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 19,
@@ -383,7 +383,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -409,7 +409,7 @@
    "title": "Tool calls (bars) & avg latency ms (right axis)",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 0,
@@ -422,7 +422,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -465,7 +465,7 @@
    "title": "Agent events by type",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 12,
@@ -478,7 +478,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -499,7 +499,7 @@
    "title": "Latest signals",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 0,
@@ -512,7 +512,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -527,7 +527,7 @@
    "title": "Error recovery log",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 0,
@@ -540,7 +540,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -555,7 +555,7 @@
    "title": "Crew runs",
    "datasource": {
     "type": "grafana-postgresql-datasource",
-    "uid": "finsight-pg"
+    "uid": "${market}"
    },
    "gridPos": {
     "x": 14,
@@ -568,7 +568,7 @@
      "refId": "A",
      "datasource": {
       "type": "grafana-postgresql-datasource",
-      "uid": "finsight-pg"
+      "uid": "${market}"
      },
      "rawQuery": true,
      "editorMode": "code",
@@ -580,5 +580,25 @@
  ],
  "tags": [
   "finsight"
- ]
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "market",
+    "label": "Market",
+    "type": "datasource",
+    "query": "grafana-postgresql-datasource",
+    "regex": "/market/",
+    "current": {
+     "selected": true,
+     "text": "US market ($)",
+     "value": "finsight-pg"
+    },
+    "hide": 0,
+    "refresh": 1,
+    "includeAll": false,
+    "multi": false
+   }
+  ]
+ }
 }

@@ -1,7 +1,11 @@
-"""RAG over SEC 10-K filings.
+"""RAG over company annual reports.
+
+Corpus (per market, see markets.py)
+  US    SEC EDGAR 10-K via edgartools -> Item 1 Business, Item 1A Risk Factors, Item 7 MD&A
+  India company annual-report PDF (report_bot.py) -> narrative pages, labelled
+        Business & Strategy / Risk Management / MD&A / Board's Report (pdf_reports.py)
 
 Ingestion
-  SEC EDGAR (edgartools) -> Item 1 Business, Item 1A Risk Factors, Item 7 MD&A
   -> paragraph-aware chunks (~1,200 chars, 200-char overlap)
   -> nomic-embed-text via Ollama ("search_document:" prefix)
   -> ChromaDB (persistent, cosine distance), one collection for all tickers
@@ -10,9 +14,11 @@ Retrieval (hybrid)
   query -> nomic-embed-text ("search_query:" prefix) -> top-25 by cosine,
   filtered to the ticker -> re-ranked by 0.75 x semantic + 0.25 x keyword overlap
   -> top-k chunks returned with a citation string, e.g. [AAPL 10-K FY2025 · Risk Factors · #12]
+     or, for an Indian annual report, [WIPRO.NS AR FY2026 · Risk Management · p57 #212]
 """
 import hashlib
 import logging
+import os
 import re
 import time
 
@@ -30,7 +36,9 @@ SECTIONS = {
 }
 CHUNK_CHARS = 1200
 OVERLAP_CHARS = 200
-COLLECTION = "sec_filings"
+PDF_CHUNK_CHARS = 1200
+CONTEXT_HEADERS = os.getenv("RAG_CONTEXT_HEADERS", "1") == "1"
+COLLECTION = config.M["collection"]
 
 _client = None
 
@@ -110,15 +118,64 @@ def _section_text(tenk, item: str) -> str:
 
 
 def ingest_ticker(ticker: str, n_filings: int = 1, force: bool = False) -> dict:
-    """Download the latest 10-K(s) for `ticker` and index them. Idempotent."""
-    from edgar import Company, set_identity
-
-    ticker = ticker.upper()
+    """Download the latest annual report for `ticker` and index it. Idempotent."""
+    ticker = config.normalize_ticker(ticker)
     col = collection()
     if not force and col.get(where={"ticker": ticker}, limit=1)["ids"]:
         return {"ticker": ticker, "status": "already indexed",
                 "chunks": len(col.get(where={"ticker": ticker}, include=[])["ids"])}
+    if force:
+        col.delete(where={"ticker": ticker})
+    if config.M["corpus"] == "pdf":
+        return _ingest_pdf(ticker)
+    return _ingest_sec(ticker, n_filings)
 
+
+def _ingest_pdf(ticker: str) -> dict:
+    from .pdf_reports import extract_sections
+    from .report_bot import fetch, report_path
+
+    meta = config.M.get("reports", {}).get(ticker)
+    if not meta:
+        raise ValueError(f"No annual report configured for {ticker}; add it to markets.py")
+    path = report_path(ticker, meta["fy"])
+    if not path.exists():
+        res = fetch(ticker, meta)
+        if not path.exists():
+            raise RuntimeError(f"Annual report for {ticker} unavailable: {res.get('status')}")
+    t0 = time.time()
+    docs, metas, ids = [], [], []
+    size = int(os.getenv("RAG_PDF_CHUNK", PDF_CHUNK_CHARS))
+    for section, page, text in extract_sections(path):
+        for piece in chunk_text(text, size=size, overlap=size // 6):
+            n = len(docs)
+            docs.append(piece)
+            ids.append(hashlib.md5(f"{ticker}|{meta['fy']}|{page}|{n}".encode()).hexdigest())
+            metas.append({"ticker": ticker, "form": "AR", "fiscal_year": meta["fy"], "section": section,
+                          "page": page, "chunk": n, "filing_date": "", "url": meta["url"], "title": meta["title"]})
+    col = collection()
+    for i in range(0, len(docs), 128):
+        batch_meta = metas[i:i + 128]
+        # Contextual header: the embedding sees "who / which report / which section" as well as the passage,
+        # so a short PDF fragment still carries its context. The stored text stays the passage itself.
+        to_embed = [f"{meta['title']} · {m['section']} · page {m['page']}\n{d}" if CONTEXT_HEADERS else d
+                    for m, d in zip(batch_meta, docs[i:i + 128])]
+        col.upsert(ids=ids[i:i + 128], documents=docs[i:i + 128], metadatas=batch_meta,
+                   embeddings=embed(to_embed, "document"))
+    db.log_event("rag_ingest", ticker, f"{len(docs)} chunks", duration_ms=(time.time() - t0) * 1000)
+    return {"ticker": ticker, "status": "indexed", "chunks": len(docs), "seconds": round(time.time() - t0, 1)}
+
+
+def citation(meta: dict) -> str:
+    if meta.get("form") == "AR":
+        return f"[{meta['ticker']} AR FY{meta['fiscal_year']} · {meta['section']} · p{meta['page']} #{meta['chunk']}]"
+    return f"[{meta['ticker']} 10-K FY{meta['fiscal_year']} · {meta['section']} · #{meta['chunk']}]"
+
+
+def _ingest_sec(ticker: str, n_filings: int = 1) -> dict:
+    from edgar import Company, set_identity
+
+    col = collection()
     set_identity(config.SEC_IDENTITY)
     t0 = time.time()
     filings = Company(ticker).get_filings(form="10-K").head(n_filings)
@@ -162,10 +219,12 @@ def _keywords(s):
     return {w for w in _WORD.findall(s.lower()) if w not in _STOP}
 
 
-def search(ticker: str, query: str, k: int = 4, section: str = None, run_id=None, alpha: float = 0.75,
+def search(ticker: str, query: str, k: int = 4, section: str = None, run_id=None, alpha: float = None,
            log: bool = True) -> list:
     t0 = time.time()
-    where = {"ticker": ticker.upper()}
+    ticker = config.normalize_ticker(ticker)
+    alpha = config.M["rag_alpha"] if alpha is None else alpha
+    where = {"ticker": ticker}
     if section:
         where = {"$and": [where, {"section": section}]}
     res = collection().query(query_embeddings=embed([query], "query"), n_results=25, where=where,
@@ -180,7 +239,8 @@ def search(ticker: str, query: str, k: int = 4, section: str = None, run_id=None
         hits.append({
             "score": round(alpha * semantic + (1 - alpha) * overlap, 3),
             "semantic": round(semantic, 3),
-            "citation": f"[{meta['ticker']} 10-K FY{meta['fiscal_year']} · {meta['section']} · #{meta['chunk']}]",
+            "citation": citation(meta),
+            "page": meta.get("page"),
             "section": meta["section"],
             "fiscal_year": meta["fiscal_year"],
             "text": doc,
@@ -203,8 +263,8 @@ def answer(ticker: str, question: str, k: int = 4) -> dict:
         return {"answer": f"No indexed filings for {ticker}. Index it first.", "sources": []}
     context = "\n\n".join(f"{h['citation']}\n{h['text']}" for h in hits)
     prompt = (
-        f"Answer the question about {ticker} using ONLY the 10-K passages below. "
-        "After each claim put the citation tag it came from, e.g. [AAPL 10-K FY2025 · Risk Factors · #4]. "
+        f"Answer the question about {ticker} using ONLY the {config.M['doc_name']} passages below. "
+        "After each claim put the citation tag it came from, exactly as written above the passage. "
         "If the passages do not contain the answer, say so plainly.\n\n"
         f"PASSAGES:\n{context}\n\nQUESTION: {question}\nANSWER (max 150 words):"
     )

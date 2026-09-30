@@ -1,7 +1,7 @@
 """Always-on scheduler (runs as its own container).
 
   every 15 min   mark-to-market: refresh prices, fire stop-loss / take-profit, snapshot equity  (no LLM)
-  weekdays 16:30 US/Eastern   run the full crew over the watchlist                              (LLM)
+  weekdays after the close     run the full crew over the watchlist (16:30 New York / 16:00 India) (LLM)
   on start       make sure every watchlist ticker's 10-K is in the vector store
 
     python -m finsight.scheduler            # run forever
@@ -45,7 +45,7 @@ def warm_rag():
 
 
 def main():
-    log.info("DB backend: %s | watchlist: %s", db.backend(), config.WATCHLIST)
+    log.info("Market %s | DB backend: %s | watchlist: %s", config.MARKET, db.backend(), config.WATCHLIST)
     stale = db.fail_stale_runs(minutes=15)
     if stale:
         log.warning("marked %d interrupted run(s)", stale)
@@ -54,9 +54,10 @@ def main():
         crew_job()
         mark_to_market_job()
         return
-    sched = BlockingScheduler(timezone="America/New_York")
+    tz, (hh, mm) = config.M["timezone"], config.M["crew_time"]
+    sched = BlockingScheduler(timezone=tz)
     sched.add_job(mark_to_market_job, "interval", minutes=15, id="mtm")
-    sched.add_job(crew_job, "cron", day_of_week="mon-fri", hour=16, minute=30, id="crew")
+    sched.add_job(crew_job, "cron", day_of_week="mon-fri", hour=hh, minute=mm, id="crew")
     mark_to_market_job()
     log.info("Scheduler started")
     sched.start()

@@ -12,11 +12,28 @@
 | 341294 | Vineet Intodia |
 | 65089 | Mahaveer Soni |
 
-A three-agent CrewAI system that researches US stocks from live market data **and the companies' own SEC 10-K filings (RAG)**, values them with a DCF and multiples, and turns the research into risk-managed **paper trades**, running continuously on a scheduler. Everything runs locally and for free: **Ollama (Qwen3 8B)** as the LLM, **ChromaDB** as the vector store, **PostgreSQL** for state, **Streamlit** as the control room and **Grafana** for monitoring.
+A three-agent CrewAI system that researches **US and Indian** stocks from live market data **and the companies' own SEC 10-K filings (RAG)**, values them with a DCF and multiples, and turns the research into risk-managed **paper trades**, running continuously on a scheduler. Everything runs locally and for free: **Ollama (Qwen3 8B)** as the LLM, **ChromaDB** as the vector store, **PostgreSQL** for state, **Streamlit** as the control room and **Grafana** for monitoring.
 
 > Paper trading only. Nothing here is investment advice.
 
 ---
+
+## Two markets, one switch
+
+| | 🇺🇸 US (`MARKET=US`) | 🇮🇳 India (`MARKET=IN`) |
+|---|---|---|
+| Watchlist | AAPL, MSFT, NVDA, JPM, XOM, JNJ | WIPRO, ITC, SUNPHARMA, EICHERMOT, BHARTIARTL, ASIANPAINT (NSE) |
+| RAG corpus | SEC 10-K (Business, Risk Factors, MD&A) via `edgartools` | FY2025-26 annual-report PDFs from each company's own website (`scripts/fetch_annual_reports.py`), narrative pages labelled Business & Strategy / Risk Management / MD&A |
+| Citation | `[AAPL 10-K FY2025 · Risk Factors · #21]` | `[ITC.NS AR FY2026 · MD&A · p67 #93]` (links to the PDF page) |
+| Benchmark | SPY | NIFTY 50 |
+| Valuation inputs | 10y Treasury 4.3%, ERP 5.5%, terminal growth 2.5% | 10y G-sec 6.5%, ERP 7%, terminal growth 5% |
+| Beta | vs SPY, 2y weekly | vs NIFTY 50, 2y weekly (Yahoo's beta for Indian stocks is vs the S&P 500) |
+| Starting cash | $100,000 | ₹1,00,00,000 |
+| Crew run | weekdays 16:30 New York | weekdays 16:00 IST |
+| Streamlit | http://localhost:8502 | http://localhost:8503 |
+| Database | `finsight` | `finsight_in` |
+
+Switch markets with the sidebar button in Streamlit or the **Market** dropdown in Grafana. The six Indian companies were chosen because their data is clean: statements in rupees (HCL Tech reports in USD), positive free cash flow in each of the last three years, and a report downloadable from the company's own site (TCS and BSE block automated downloads, so they were not used).
 
 ## 1. Architecture
 
@@ -85,7 +102,7 @@ flowchart LR
 | Retrieval | Top-25 by cosine → **hybrid re-rank** 0.75 × semantic + 0.25 × keyword overlap → top-k | Exact terms (drug names, laws, product names) matter in filings |
 | Grounding | Every chunk carries a citation tag, e.g. `[NVDA 10-K FY2026 · Risk Factors · #69]`; the guardrail rejects a signal without citations | Auditable claims, no invented sources |
 
-### Retrieval evaluation (`python eval/run_rag_eval.py`)
+### Retrieval evaluation (`python eval/run_rag_eval.py`, `MARKET=IN python eval/run_rag_eval.py`)
 
 18 hand-written questions over AAPL / NVDA / JNJ 10-Ks, deliberately **paraphrased so they do not contain the answer keyword** (e.g. "Which foundry manufactures NVIDIA's chips?" → must find "TSMC"). A hit = a retrieved chunk contains the ground-truth fact.
 
@@ -95,7 +112,17 @@ flowchart LR
 | **Hybrid re-rank (α = 0.75)** | **0.50** | **0.78** | **0.78** | **0.61** |
 | Hybrid re-rank (α = 0.5) | 0.44 | 0.72 | 0.72 | 0.56 |
 
-Hybrid re-ranking lifts Hit@3 from 61% to 78%. The misses (e.g. "who builds Apple's hardware") are honest failures we discuss in the presentation.
+**India** (18 questions over the six annual-report PDFs; PDF text is noisier than SEC HTML):
+
+| Configuration | Hit@1 | Hit@3 | Hit@5 | MRR@5 |
+|---|---|---|---|---|
+| First version (1,200-char chunks, no headers, α = 0.75) | 0.44 | 0.50 | 0.61 | 0.50 |
+| + contextual chunk headers, vector only | 0.44 | 0.56 | 0.83 | 0.57 |
+| **+ contextual chunk headers, hybrid α = 0.9** | **0.50** | **0.72** | **0.78** | **0.59** |
+
+Contextual headers (company · report · section · page prepended to each chunk before embedding) and a per-market blend weight lifted India Hit@3 from 50% to 72%.
+
+Hybrid re-ranking lifts US Hit@3 from 61% to 78%. The misses (e.g. "who builds Apple's hardware") are honest failures we discuss in the presentation.
 
 ---
 
@@ -108,6 +135,7 @@ Hybrid re-ranking lifts Hit@3 from 61% to 78%. The misses (e.g. "who builds Appl
 | Postgres down | Automatic SQLite fallback | sidebar "Database" |
 | PM returns malformed JSON / skips its sizing tool / no citations | CrewAI **guardrail** rejects with a specific message; agent retries (max 3) | `guardrail_retry` |
 | LLM proposes a wrong stop-loss or size | Deterministic risk engine overrides it | `risk_override` |
+| PM's rationale contradicts the tool numbers (e.g. says "composite 72" when it is 55, "uptrend" in a downtrend) | Fact-check guardrail compares the rationale with the tool results and sends it back with the correct figures | `guardrail_retry` |
 | PM cites a passage it never retrieved | Guardrail checks every citation against the passages actually returned by `search_sec_filings` in this run; invented tags are dropped, none valid → retry | `guardrail_retry` |
 | Analyst cites a passage it never retrieved | Report citations are checked after the run and flagged `⚠️unverified` | `citation_unverified` |
 | LLM misapplies the fund rules (e.g. BUY with composite < 70) | Deterministic policy check downgrades to HOLD | `risk_veto` (`policy:composite<70`) |
@@ -138,7 +166,9 @@ The LLM and fundamentals cannot be backtested honestly (we only have *today's* f
 | SPY buy & hold | +111.6% | 19.6% | 16.1% | 0.92 | −18.8% |
 | Equal-weight buy & hold | +328.6% | 41.6% | 25.1% | 1.34 | −25.5% |
 
-149 trades, 43% win rate, average win +10.0% vs average loss −4.8%, **average capital invested only 25.7%**. Reading: the risk engine does its job (a third of the market's volatility, less than half its drawdown), but the 1%-risk sizing leaves most capital idle, so it lags a strong bull market. That trade-off is a key discussion point.
+**India, same rules (NIFTY 50 benchmark):** strategy +23.3% (max drawdown −5.8%) vs NIFTY 50 +39.1% (−15.8%); Sharpe −0.33 because the 5.2% CAGR is below India's 6.5% risk-free rate.
+
+US: 149 trades, 43% win rate, average win +10.0% vs average loss −4.8%, **average capital invested only 25.7%**. Reading: the risk engine does its job (a third of the market's volatility, less than half its drawdown), but the 1%-risk sizing leaves most capital idle, so it lags a strong bull market. That trade-off is a key discussion point.
 
 ---
 
@@ -161,7 +191,8 @@ docker compose up -d --build
 
 | Service | URL |
 |---|---|
-| Streamlit control room | http://localhost:8502 |
+| Streamlit control room, US | http://localhost:8502 |
+| Streamlit control room, India | http://localhost:8503 |
 | Grafana (admin / finsight) | http://localhost:3001 |
 | Postgres | localhost:5432 (finsight / finsight) |
 
@@ -177,7 +208,9 @@ python -m finsight.scheduler --once       # one pass over the watchlist
 python eval/run_rag_eval.py               # RAG evaluation
 python scripts/run_backtest.py            # backtest
 python scripts/reset_portfolio.py --yes   # clean slate before a demo
-pip install pytest && pytest -q           # 22 offline tests: valuation, chunking, guardrail, risk engine, fallbacks
+python scripts/fetch_annual_reports.py    # India: download + verify the 6 annual reports
+MARKET=IN streamlit run app/streamlit_app.py   # any command runs in India mode with MARKET=IN
+pip install pytest && pytest -q           # 28 offline tests: valuation, chunking, guardrail, risk engine, fallbacks
 ```
 
 Ollama runs on the host rather than in Docker so it can use the Apple-silicon GPU (Metal); containers reach it through `host.docker.internal:11434`.
@@ -192,7 +225,10 @@ finsight/
   llm.py             LLM fallback chain
   crew.py            agents, tasks, JSON guardrail
   pipeline.py        end-to-end run for one ticker
-  rag.py             10-K ingestion, hybrid retrieval, grounded Q&A
+  markets.py         per-market settings (US / India)
+  rag.py             10-K / annual-report ingestion, hybrid retrieval, grounded Q&A
+  pdf_reports.py     section-aware text extraction from Indian annual-report PDFs
+  report_bot.py      downloads + verifies the latest Indian annual reports
   broker.py          paper broker + risk engine
   backtest.py        rule-layer backtest
   scheduler.py       always-on jobs

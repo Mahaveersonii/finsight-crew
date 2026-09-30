@@ -39,7 +39,7 @@ def run(tickers=None, period: str = "5y", start_cash: float = None) -> dict:
     tickers = tickers or config.WATCHLIST
     start_cash = start_cash or config.STARTING_CASH
     data = {t: _indicators(md.get_price_history(t, period=period)) for t in tickers}
-    spy = md.get_price_history("SPY", period=period)["Close"]
+    spy = md.get_price_history(config.M["benchmark"], period=period)["Close"]
 
     # Start once every ticker has a valid SMA200.
     start = max(d["sma200"].first_valid_index() for d in data.values())
@@ -103,7 +103,7 @@ def run(tickers=None, period: str = "5y", start_cash: float = None) -> dict:
         return {"total_return_pct": round((series.iloc[-1] / series.iloc[0] - 1) * 100, 1),
                 "cagr_pct": round(((series.iloc[-1] / series.iloc[0]) ** (1 / years) - 1) * 100, 1),
                 "volatility_pct": round(rets.std() * math.sqrt(252) * 100, 1),
-                "sharpe": round((rets.mean() * 252 - 0.043) / (rets.std() * math.sqrt(252)), 2) if rets.std() else None,
+                "sharpe": round((rets.mean() * 252 - config.M["risk_free"]) / (rets.std() * math.sqrt(252)), 2) if rets.std() else None,
                 "max_drawdown_pct": round(dd * 100, 1)}
 
     tr = pd.DataFrame(trades)
@@ -111,7 +111,8 @@ def run(tickers=None, period: str = "5y", start_cash: float = None) -> dict:
         "period": f"{eq.index[0].date()} to {eq.index[-1].date()}",
         "tickers": tickers,
         "strategy": stats(eq),
-        "spy_buy_hold": stats(bench),
+        "benchmark": config.M["benchmark_name"],
+        "benchmark_buy_hold": stats(bench),
         "equal_weight_buy_hold": stats(ew),
         "n_trades": len(tr),
         "win_rate_pct": round((tr["pnl"] > 0).mean() * 100, 1) if len(tr) else None,
@@ -120,6 +121,6 @@ def run(tickers=None, period: str = "5y", start_cash: float = None) -> dict:
         "exit_reasons": tr["reason"].value_counts().to_dict() if len(tr) else {},
         "avg_capital_invested_pct": round(curve_df["invested"].mean() * 100, 1),
     }
-    curves = pd.DataFrame({"Strategy": eq, "SPY buy & hold": bench / bench.iloc[0] * start_cash,
+    curves = pd.DataFrame({"Strategy": eq, f"{config.M['benchmark_name']} buy & hold": bench / bench.iloc[0] * start_cash,
                            "Equal-weight buy & hold": ew})
     return {"summary": summary, "curves": curves, "trades": tr}

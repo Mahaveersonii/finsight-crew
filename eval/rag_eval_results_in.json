@@ -1,0 +1,710 @@
+{
+ "market": "IN",
+ "n_questions": 18,
+ "tickers": [
+  "ASIANPAINT.NS",
+  "BHARTIARTL.NS",
+  "EICHERMOT.NS",
+  "ITC.NS",
+  "SUNPHARMA.NS",
+  "WIPRO.NS"
+ ],
+ "results": {
+  "vector only (alpha=1.0)": {
+   "metrics": {
+    "hit@1": 0.444,
+    "hit@3": 0.556,
+    "hit@5": 0.833,
+    "mrr@5": 0.567
+   },
+   "rows": [
+    {
+     "ticker": "WIPRO.NS",
+     "question": "Which consulting firm gives Wipro its financial-services advisory arm?",
+     "relevant_if_contains": [
+      "Capco"
+     ],
+     "rank": 2,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p6 #8]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How does Wipro identify and manage risks across the whole organisation?",
+     "relevant_if_contains": [
+      "Enterprise Risk Management"
+     ],
+     "rank": 4,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 Risk Management \u00b7 p71 #223]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How many employees are voluntarily leaving Wipro?",
+     "relevant_if_contains": [
+      "attrition"
+     ],
+     "rank": null,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p20 #62]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "Which staple wheat flour brand does ITC own?",
+     "relevant_if_contains": [
+      "Aashirvaad"
+     ],
+     "rank": null,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p16 #15]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What does ITC make in its paper and packaging business?",
+     "relevant_if_contains": [
+      "paperboards"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p19 #21]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What happened to ITC's hospitality business?",
+     "relevant_if_contains": [
+      "ITC Hotels"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p14 #12]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "What is Sun Pharma's biologic treatment for psoriasis?",
+     "relevant_if_contains": [
+      "ILUMYA"
+     ],
+     "rank": 1,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 MD&A \u00b7 p39 #85]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "How do American drug regulator inspections affect Sun Pharma's plants?",
+     "relevant_if_contains": [
+      "USFDA"
+     ],
+     "rank": 4,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 Risk Management \u00b7 p47 #107]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "Which Israel-based generics subsidiary does Sun Pharma own?",
+     "relevant_if_contains": [
+      "Taro"
+     ],
+     "rank": null,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p4 #3]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "What is Eicher's truck and bus joint venture with Volvo?",
+     "relevant_if_contains": [
+      "VECV",
+      "VE Commercial Vehicles"
+     ],
+     "rank": 1,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p85 #149]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "Which adventure-touring motorcycle does Eicher sell?",
+     "relevant_if_contains": [
+      "Himalayan"
+     ],
+     "rank": 5,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p100 #225]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "How did overseas motorcycle shipments perform this year?",
+     "relevant_if_contains": [
+      "exports"
+     ],
+     "rank": 1,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p85 #146]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How much does Airtel earn from each mobile customer per month?",
+     "relevant_if_contains": [
+      "ARPU"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 MD&A \u00b7 p100 #415]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "Which data-centre business does Airtel run?",
+     "relevant_if_contains": [
+      "Nxtra"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p72 #269]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How do airwave auctions and their costs affect Airtel?",
+     "relevant_if_contains": [
+      "spectrum"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p88 #340]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "What furniture and home decor brands does Asian Paints sell?",
+     "relevant_if_contains": [
+      "Beautiful Homes",
+      "White Teak"
+     ],
+     "rank": 4,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "Which Asian Paints products stop leaks and dampness?",
+     "relevant_if_contains": [
+      "waterproofing"
+     ],
+     "rank": 4,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p76 #120]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "How do oil prices affect Asian Paints' raw material costs?",
+     "relevant_if_contains": [
+      "crude"
+     ],
+     "rank": 2,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p29 #32]"
+    }
+   ]
+  },
+  "hybrid (alpha=0.9)": {
+   "metrics": {
+    "hit@1": 0.5,
+    "hit@3": 0.722,
+    "hit@5": 0.778,
+    "mrr@5": 0.588
+   },
+   "rows": [
+    {
+     "ticker": "WIPRO.NS",
+     "question": "Which consulting firm gives Wipro its financial-services advisory arm?",
+     "relevant_if_contains": [
+      "Capco"
+     ],
+     "rank": 3,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p6 #8]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How does Wipro identify and manage risks across the whole organisation?",
+     "relevant_if_contains": [
+      "Enterprise Risk Management"
+     ],
+     "rank": 3,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 Risk Management \u00b7 p71 #223]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How many employees are voluntarily leaving Wipro?",
+     "relevant_if_contains": [
+      "attrition"
+     ],
+     "rank": null,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p20 #62]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "Which staple wheat flour brand does ITC own?",
+     "relevant_if_contains": [
+      "Aashirvaad"
+     ],
+     "rank": null,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p16 #15]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What does ITC make in its paper and packaging business?",
+     "relevant_if_contains": [
+      "paperboards"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p19 #21]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What happened to ITC's hospitality business?",
+     "relevant_if_contains": [
+      "ITC Hotels"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p14 #12]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "What is Sun Pharma's biologic treatment for psoriasis?",
+     "relevant_if_contains": [
+      "ILUMYA"
+     ],
+     "rank": 1,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 MD&A \u00b7 p39 #85]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "How do American drug regulator inspections affect Sun Pharma's plants?",
+     "relevant_if_contains": [
+      "USFDA"
+     ],
+     "rank": 4,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 Risk Management \u00b7 p47 #107]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "Which Israel-based generics subsidiary does Sun Pharma own?",
+     "relevant_if_contains": [
+      "Taro"
+     ],
+     "rank": null,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p4 #3]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "What is Eicher's truck and bus joint venture with Volvo?",
+     "relevant_if_contains": [
+      "VECV",
+      "VE Commercial Vehicles"
+     ],
+     "rank": 1,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p85 #149]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "Which adventure-touring motorcycle does Eicher sell?",
+     "relevant_if_contains": [
+      "Himalayan"
+     ],
+     "rank": null,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p100 #224]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "How did overseas motorcycle shipments perform this year?",
+     "relevant_if_contains": [
+      "exports"
+     ],
+     "rank": 1,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p85 #146]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How much does Airtel earn from each mobile customer per month?",
+     "relevant_if_contains": [
+      "ARPU"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 MD&A \u00b7 p100 #415]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "Which data-centre business does Airtel run?",
+     "relevant_if_contains": [
+      "Nxtra"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p72 #269]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How do airwave auctions and their costs affect Airtel?",
+     "relevant_if_contains": [
+      "spectrum"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p88 #340]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "What furniture and home decor brands does Asian Paints sell?",
+     "relevant_if_contains": [
+      "Beautiful Homes",
+      "White Teak"
+     ],
+     "rank": 3,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "Which Asian Paints products stop leaks and dampness?",
+     "relevant_if_contains": [
+      "waterproofing"
+     ],
+     "rank": 1,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "How do oil prices affect Asian Paints' raw material costs?",
+     "relevant_if_contains": [
+      "crude"
+     ],
+     "rank": 3,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p29 #32]"
+    }
+   ]
+  },
+  "hybrid (alpha=0.75)": {
+   "metrics": {
+    "hit@1": 0.389,
+    "hit@3": 0.667,
+    "hit@5": 0.667,
+    "mrr@5": 0.5
+   },
+   "rows": [
+    {
+     "ticker": "WIPRO.NS",
+     "question": "Which consulting firm gives Wipro its financial-services advisory arm?",
+     "relevant_if_contains": [
+      "Capco"
+     ],
+     "rank": 2,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p23 #81]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How does Wipro identify and manage risks across the whole organisation?",
+     "relevant_if_contains": [
+      "Enterprise Risk Management"
+     ],
+     "rank": 3,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 Risk Management \u00b7 p71 #223]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How many employees are voluntarily leaving Wipro?",
+     "relevant_if_contains": [
+      "attrition"
+     ],
+     "rank": null,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p20 #62]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "Which staple wheat flour brand does ITC own?",
+     "relevant_if_contains": [
+      "Aashirvaad"
+     ],
+     "rank": null,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p16 #15]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What does ITC make in its paper and packaging business?",
+     "relevant_if_contains": [
+      "paperboards"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p19 #21]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What happened to ITC's hospitality business?",
+     "relevant_if_contains": [
+      "ITC Hotels"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p14 #12]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "What is Sun Pharma's biologic treatment for psoriasis?",
+     "relevant_if_contains": [
+      "ILUMYA"
+     ],
+     "rank": 1,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 MD&A \u00b7 p39 #85]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "How do American drug regulator inspections affect Sun Pharma's plants?",
+     "relevant_if_contains": [
+      "USFDA"
+     ],
+     "rank": null,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 MD&A \u00b7 p45 #99]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "Which Israel-based generics subsidiary does Sun Pharma own?",
+     "relevant_if_contains": [
+      "Taro"
+     ],
+     "rank": null,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p4 #3]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "What is Eicher's truck and bus joint venture with Volvo?",
+     "relevant_if_contains": [
+      "VECV",
+      "VE Commercial Vehicles"
+     ],
+     "rank": 1,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p85 #149]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "Which adventure-touring motorcycle does Eicher sell?",
+     "relevant_if_contains": [
+      "Himalayan"
+     ],
+     "rank": null,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p100 #224]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "How did overseas motorcycle shipments perform this year?",
+     "relevant_if_contains": [
+      "exports"
+     ],
+     "rank": 2,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p13 #14]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How much does Airtel earn from each mobile customer per month?",
+     "relevant_if_contains": [
+      "ARPU"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 MD&A \u00b7 p100 #415]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "Which data-centre business does Airtel run?",
+     "relevant_if_contains": [
+      "Nxtra"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p72 #269]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How do airwave auctions and their costs affect Airtel?",
+     "relevant_if_contains": [
+      "spectrum"
+     ],
+     "rank": 3,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Risk Management \u00b7 p32 #92]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "What furniture and home decor brands does Asian Paints sell?",
+     "relevant_if_contains": [
+      "Beautiful Homes",
+      "White Teak"
+     ],
+     "rank": 3,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "Which Asian Paints products stop leaks and dampness?",
+     "relevant_if_contains": [
+      "waterproofing"
+     ],
+     "rank": 1,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "How do oil prices affect Asian Paints' raw material costs?",
+     "relevant_if_contains": [
+      "crude"
+     ],
+     "rank": null,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 Risk Management \u00b7 p61 #97]"
+    }
+   ]
+  },
+  "hybrid (alpha=0.5)": {
+   "metrics": {
+    "hit@1": 0.389,
+    "hit@3": 0.667,
+    "hit@5": 0.667,
+    "mrr@5": 0.491
+   },
+   "rows": [
+    {
+     "ticker": "WIPRO.NS",
+     "question": "Which consulting firm gives Wipro its financial-services advisory arm?",
+     "relevant_if_contains": [
+      "Capco"
+     ],
+     "rank": 2,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p23 #81]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How does Wipro identify and manage risks across the whole organisation?",
+     "relevant_if_contains": [
+      "Enterprise Risk Management"
+     ],
+     "rank": 3,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 Risk Management \u00b7 p71 #223]"
+    },
+    {
+     "ticker": "WIPRO.NS",
+     "question": "How many employees are voluntarily leaving Wipro?",
+     "relevant_if_contains": [
+      "attrition"
+     ],
+     "rank": null,
+     "top_citation": "[WIPRO.NS AR FY2026 \u00b7 MD&A \u00b7 p20 #60]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "Which staple wheat flour brand does ITC own?",
+     "relevant_if_contains": [
+      "Aashirvaad"
+     ],
+     "rank": null,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p16 #15]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What does ITC make in its paper and packaging business?",
+     "relevant_if_contains": [
+      "paperboards"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p19 #21]"
+    },
+    {
+     "ticker": "ITC.NS",
+     "question": "What happened to ITC's hospitality business?",
+     "relevant_if_contains": [
+      "ITC Hotels"
+     ],
+     "rank": 1,
+     "top_citation": "[ITC.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p14 #12]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "What is Sun Pharma's biologic treatment for psoriasis?",
+     "relevant_if_contains": [
+      "ILUMYA"
+     ],
+     "rank": 1,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 MD&A \u00b7 p39 #85]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "How do American drug regulator inspections affect Sun Pharma's plants?",
+     "relevant_if_contains": [
+      "USFDA"
+     ],
+     "rank": null,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 MD&A \u00b7 p45 #99]"
+    },
+    {
+     "ticker": "SUNPHARMA.NS",
+     "question": "Which Israel-based generics subsidiary does Sun Pharma own?",
+     "relevant_if_contains": [
+      "Taro"
+     ],
+     "rank": null,
+     "top_citation": "[SUNPHARMA.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p4 #3]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "What is Eicher's truck and bus joint venture with Volvo?",
+     "relevant_if_contains": [
+      "VECV",
+      "VE Commercial Vehicles"
+     ],
+     "rank": 1,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p85 #149]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "Which adventure-touring motorcycle does Eicher sell?",
+     "relevant_if_contains": [
+      "Himalayan"
+     ],
+     "rank": null,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p100 #224]"
+    },
+    {
+     "ticker": "EICHERMOT.NS",
+     "question": "How did overseas motorcycle shipments perform this year?",
+     "relevant_if_contains": [
+      "exports"
+     ],
+     "rank": 3,
+     "top_citation": "[EICHERMOT.NS AR FY2026 \u00b7 MD&A \u00b7 p13 #14]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How much does Airtel earn from each mobile customer per month?",
+     "relevant_if_contains": [
+      "ARPU"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 MD&A \u00b7 p100 #415]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "Which data-centre business does Airtel run?",
+     "relevant_if_contains": [
+      "Nxtra"
+     ],
+     "rank": 1,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Business & Strategy \u00b7 p72 #269]"
+    },
+    {
+     "ticker": "BHARTIARTL.NS",
+     "question": "How do airwave auctions and their costs affect Airtel?",
+     "relevant_if_contains": [
+      "spectrum"
+     ],
+     "rank": 3,
+     "top_citation": "[BHARTIARTL.NS AR FY2026 \u00b7 Risk Management \u00b7 p32 #92]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "What furniture and home decor brands does Asian Paints sell?",
+     "relevant_if_contains": [
+      "Beautiful Homes",
+      "White Teak"
+     ],
+     "rank": 3,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "Which Asian Paints products stop leaks and dampness?",
+     "relevant_if_contains": [
+      "waterproofing"
+     ],
+     "rank": 1,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 MD&A \u00b7 p10 #11]"
+    },
+    {
+     "ticker": "ASIANPAINT.NS",
+     "question": "How do oil prices affect Asian Paints' raw material costs?",
+     "relevant_if_contains": [
+      "crude"
+     ],
+     "rank": null,
+     "top_citation": "[ASIANPAINT.NS AR FY2026 \u00b7 Risk Management \u00b7 p61 #97]"
+    }
+   ]
+  }
+ }
+}

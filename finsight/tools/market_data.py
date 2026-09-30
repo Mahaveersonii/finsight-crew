@@ -66,7 +66,7 @@ _YF_FIELDS = [
     "profitMargins", "returnOnEquity", "totalDebt", "totalCash", "debtToEquity",
     "freeCashflow", "operatingCashflow", "sharesOutstanding", "beta", "dividendYield",
     "fiftyTwoWeekHigh", "fiftyTwoWeekLow", "trailingEps", "targetMeanPrice",
-    "recommendationKey",
+    "recommendationKey", "currency", "financialCurrency",
 ]
 
 
@@ -162,6 +162,9 @@ def get_fundamentals(ticker: str, run_id=None) -> dict:
     except Exception as exc:  # noqa: BLE001
         db.log_event("data_fallback", "fundamentals:yahoo->sec", f"{ticker}: {exc}", run_id)
         try:
+            if config.M["corpus"] != "sec":
+                # India has no free, official structured-data API like SEC XBRL: go straight to the cache.
+                raise ValueError("no official structured-data fallback for this market")
             data = _from_sec(ticker)
         except Exception as exc2:  # noqa: BLE001
             db.log_event("data_fallback", "fundamentals:sec->cache", f"{ticker}: {exc2}", run_id)

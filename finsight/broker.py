@@ -173,7 +173,7 @@ def mark_to_market(price_fn=None) -> dict:
             with db.engine().begin() as c:
                 c.execute(update(positions).where(positions.c.ticker == p["ticker"]).values(last_price=px))
     try:
-        bench = price_fn("SPY")
+        bench = price_fn(config.M["benchmark"])
     except Exception:  # noqa: BLE001
         bench = None
     pos_value = sum(p["shares"] * (p["last_price"] or p["avg_price"]) for p in open_positions())

@@ -1,6 +1,6 @@
 """End-to-end orchestration for one ticker:
 
-  preflight data -> ensure 10-K indexed -> crew (with LLM fallback chain)
+  preflight data -> ensure annual report indexed -> crew (with LLM fallback chain)
   -> guardrail-validated JSON signal -> deterministic risk engine -> paper fill
   -> persistence (runs / signals / trades / snapshots / events)
 """
@@ -10,8 +10,8 @@ import re
 import threading
 import time
 
-from . import broker, db, rag
-from .crew import build_crew, extract_json
+from . import broker, config, db, rag
+from .crew import build_crew, extract_json, norm_tag
 from .db import insert, signals, update
 from .llm import make_llm, model_chain
 from .tools import crew_tools as T
@@ -36,13 +36,13 @@ def analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
         _RUN_LOCK.release()
 
 
-_TAG = re.compile(r"\[[A-Z.\-]+ 10-K FY\d{4} · [^\]]+ · #\d+\]")
+_TAG = re.compile(r"\[[A-Z0-9&.\-]+ (?:10-K|AR) FY\d{4} · [^\]]+ · (?:p\d+ )?#\d+\]")
 
 
 def _check_report_citations(report: str, run_id, emit) -> str:
-    """Flag any 10-K citation in the analyst report that was not actually retrieved in this run."""
-    real = T.RUN["citations"]
-    bad = sorted({c for c in _TAG.findall(report) if c not in real})
+    """Flag any annual-report citation in the analyst report that was not actually retrieved in this run."""
+    real = {norm_tag(c) for c in T.RUN["citations"]}
+    bad = sorted({c for c in _TAG.findall(report) if norm_tag(c) not in real})
     for c in bad:
         report = report.replace(c, f"{c} ⚠️unverified")
     if bad:
@@ -52,7 +52,7 @@ def _check_report_citations(report: str, run_id, emit) -> str:
 
 
 def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
-    ticker = ticker.strip().upper()
+    ticker = config.normalize_ticker(ticker)
     emit = on_event or (lambda msg: log.info(msg))
     chain = model_chain()
     if not chain:
@@ -71,7 +71,7 @@ def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
         db.finish_run(run_id, status="failed", duration_s=time.time() - t0, report=str(exc))
         raise
     if ticker not in rag.indexed_tickers():
-        emit(f"📚 Indexing latest 10-K for {ticker} into the vector store")
+        emit(f"📚 Indexing the latest {config.M['doc_name']} for {ticker} into the vector store")
         emit(f"   → {rag.ingest_ticker(ticker)}")
 
     # 2. Crew, with model fallback.
@@ -102,6 +102,7 @@ def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
         db.log_event("risk_veto", "policy:composite<70", f"{ticker} BUY -> HOLD (composite {score})", run_id)
         emit(f"🛡️ Policy check: BUY needs composite >= 70, got {score} -> HOLD")
         sig["action"], sig["policy_override"] = "HOLD", f"BUY downgraded: composite {score} < 70"
+        sig["rationale"] = f"[Policy override: the PM proposed BUY, but the composite score is {score} (< 70).] " + sig.get("rationale", "")
     if sig["action"] == "SELL" and not held:
         sig["action"], sig["policy_override"] = "HOLD", "SELL ignored: no position (long-only)"
 

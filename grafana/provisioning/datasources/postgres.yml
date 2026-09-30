@@ -1,6 +1,10 @@
 apiVersion: 1
-datasources:
+# The US data source was renamed from "FinSight Postgres"; remove the old entry so the uid can be reused.
+deleteDatasources:
   - name: FinSight Postgres
+    orgId: 1
+datasources:
+  - name: US market ($)
     uid: finsight-pg
     type: grafana-postgresql-datasource
     url: postgres:5432
@@ -10,5 +14,16 @@ datasources:
       password: finsight
     jsonData:
       database: finsight
+      sslmode: disable
+      postgresVersion: 1600
+  - name: India market (₹)
+    uid: finsight-pg-in
+    type: grafana-postgresql-datasource
+    url: postgres:5432
+    user: finsight
+    secureJsonData:
+      password: finsight
+    jsonData:
+      database: finsight_in
       sslmode: disable
       postgresVersion: 1600

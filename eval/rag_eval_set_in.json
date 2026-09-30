@@ -1,0 +1,20 @@
+[
+ {"ticker": "WIPRO.NS", "question": "Which consulting firm gives Wipro its financial-services advisory arm?", "relevant_if_contains": ["Capco"]},
+ {"ticker": "WIPRO.NS", "question": "How does Wipro identify and manage risks across the whole organisation?", "relevant_if_contains": ["Enterprise Risk Management"]},
+ {"ticker": "WIPRO.NS", "question": "How many employees are voluntarily leaving Wipro?", "relevant_if_contains": ["attrition"]},
+ {"ticker": "ITC.NS", "question": "Which staple wheat flour brand does ITC own?", "relevant_if_contains": ["Aashirvaad"]},
+ {"ticker": "ITC.NS", "question": "What does ITC make in its paper and packaging business?", "relevant_if_contains": ["paperboards"]},
+ {"ticker": "ITC.NS", "question": "What happened to ITC's hospitality business?", "relevant_if_contains": ["ITC Hotels"]},
+ {"ticker": "SUNPHARMA.NS", "question": "What is Sun Pharma's biologic treatment for psoriasis?", "relevant_if_contains": ["ILUMYA"]},
+ {"ticker": "SUNPHARMA.NS", "question": "How do American drug regulator inspections affect Sun Pharma's plants?", "relevant_if_contains": ["USFDA"]},
+ {"ticker": "SUNPHARMA.NS", "question": "Which Israel-based generics subsidiary does Sun Pharma own?", "relevant_if_contains": ["Taro"]},
+ {"ticker": "EICHERMOT.NS", "question": "What is Eicher's truck and bus joint venture with Volvo?", "relevant_if_contains": ["VECV", "VE Commercial Vehicles"]},
+ {"ticker": "EICHERMOT.NS", "question": "Which adventure-touring motorcycle does Eicher sell?", "relevant_if_contains": ["Himalayan"]},
+ {"ticker": "EICHERMOT.NS", "question": "How did overseas motorcycle shipments perform this year?", "relevant_if_contains": ["exports"]},
+ {"ticker": "BHARTIARTL.NS", "question": "How much does Airtel earn from each mobile customer per month?", "relevant_if_contains": ["ARPU"]},
+ {"ticker": "BHARTIARTL.NS", "question": "Which data-centre business does Airtel run?", "relevant_if_contains": ["Nxtra"]},
+ {"ticker": "BHARTIARTL.NS", "question": "How do airwave auctions and their costs affect Airtel?", "relevant_if_contains": ["spectrum"]},
+ {"ticker": "ASIANPAINT.NS", "question": "What furniture and home decor brands does Asian Paints sell?", "relevant_if_contains": ["Beautiful Homes", "White Teak"]},
+ {"ticker": "ASIANPAINT.NS", "question": "Which Asian Paints products stop leaks and dampness?", "relevant_if_contains": ["waterproofing"]},
+ {"ticker": "ASIANPAINT.NS", "question": "How do oil prices affect Asian Paints' raw material costs?", "relevant_if_contains": ["crude"]}
+]

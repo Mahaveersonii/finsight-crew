@@ -108,14 +108,27 @@ def _fill(ticker, side, shares, price, reason, signal_id=None, realized=None):
                                         reason=reason, signal_id=signal_id, realized_pnl=realized))
 
 
-def execute(signal: dict, sector: str, atr: float, run_id=None, signal_id=None) -> dict:
-    """Apply risk rules to an agent signal and paper-execute it."""
+def execute(signal: dict, sector: str, atr: float, run_id=None, signal_id=None, queue_if_closed: bool = False) -> dict:
+    """Apply risk rules to an agent signal and paper-execute it.
+
+    With `queue_if_closed`, a BUY/SELL decided while the exchange is closed is not filled at the stale
+    closing price: it is queued and filled at the first price check after the next open (fill_pending)."""
+    from . import market_clock
+
     ticker, action, price = signal["ticker"], signal["action"], float(signal["price"])
     held = next((p for p in open_positions() if p["ticker"] == ticker), None)
 
     if action == "BUY" and signal.get("confidence", 0) < config.MIN_CONFIDENCE:
         db.log_event("risk_veto", "low_confidence", f"{ticker} BUY conf={signal.get('confidence')}", run_id)
         return {"status": "vetoed", "reason": f"confidence {signal.get('confidence')} < {config.MIN_CONFIDENCE}"}
+
+    if queue_if_closed and action in ("BUY", "SELL") and not (action == "SELL" and not held) \
+            and not market_clock.is_open():
+        st = market_clock.status()
+        reason = f"{st['label']}: order queued, it will execute at the next open ({st['detail']})"
+        preview = plan_trade(ticker, price, atr, sector) if action == "BUY" else None
+        db.log_event("order_queued", ticker, f"{action} {ticker} queued while {st['label']}; executes when it {st['detail']}", run_id)
+        return {"status": "pending", "reason": reason, "plan": preview}
 
     if action == "BUY":
         plan = plan_trade(ticker, price, atr, sector)
@@ -152,6 +165,54 @@ def close_position(pos: dict, price: float, reason: str, signal_id=None):
     return pnl
 
 
+def fill_pending(price_fn=None, max_age_days: int = 5) -> list:
+    """Execute orders queued while the exchange was closed, at the current price with fresh sizing.
+    Older orders expire; an order is superseded if a newer decision exists for the same ticker."""
+    from datetime import timedelta
+
+    from .db import signals
+    from .tools import market_data as md
+    from .tools import valuation as val
+
+    price_fn = price_fn or md.latest_price
+    done = []
+    pending = db.fetch_all(select(signals).where(signals.c.status == "pending").order_by(signals.c.ts))
+    for sig in pending:
+        t, sid = sig["ticker"], sig["id"]
+        newer = db.fetch_all(select(signals.c.id).where(signals.c.ticker == t, signals.c.ts > sig["ts"]))
+        if newer:
+            outcome = {"status": "superseded"}
+        elif sig["ts"] < db.now() - timedelta(days=max_age_days):
+            outcome = {"status": "expired"}
+        else:
+            try:
+                px = float(price_fn(t))
+                atr = val.atr(md.get_price_history(t, "3mo"))
+                sector = (md.get_fundamentals(t) or {}).get("sector") or "Unknown"
+            except Exception as exc:  # noqa: BLE001 - try again at the next check
+                db.log_event("data_fallback", "fill_pending", f"{t}: {exc}")
+                continue
+            outcome = execute({"ticker": t, "action": sig["action"], "price": px, "confidence": sig["confidence"]},
+                              sector, atr, signal_id=sid)
+            plan = outcome.get("plan") or {}
+            with db.engine().begin() as c:
+                c.execute(update(signals).where(signals.c.id == sid).values(
+                    price=px, stop_loss=plan.get("stop_loss", sig["stop_loss"]),
+                    take_profit=plan.get("take_profit", sig["take_profit"]),
+                    shares=plan.get("shares") or outcome.get("shares") or 0))
+        with db.engine().begin() as c:
+            c.execute(update(signals).where(signals.c.id == sid).values(status=outcome["status"]))
+        if outcome["status"] == "executed":
+            shares = (outcome.get("plan") or {}).get("shares") or outcome.get("shares")
+            db.log_event("order_filled", t, f"{sig['action']} {shares} {t} at {px:,.2f} (queued at "
+                                            f"{sig['ts']:%d %b %H:%M} UTC, filled at the market open)")
+        else:
+            db.log_event("order_cancelled", t, f"queued {sig['action']} {t} {outcome['status']}"
+                                               + (f": {outcome.get('reason')}" if outcome.get("reason") else ""))
+        done.append((t, sig["action"], outcome["status"]))
+    return done
+
+
 def mark_to_market(price_fn=None) -> dict:
     """Refresh prices, fire stop-loss / take-profit exits, record an equity snapshot.
     Needs no LLM, so the scheduler can run it every few minutes for free."""
@@ -169,6 +230,11 @@ def mark_to_market(price_fn=None) -> dict:
             exits.append((p["ticker"], "stop_loss", close_position(p, px, "stop_loss")))
         elif p["take_profit"] and px >= p["take_profit"]:
             exits.append((p["ticker"], "take_profit", close_position(p, px, "take_profit")))
+        if exits and exits[-1][0] == p["ticker"]:
+            _, why, pnl = exits[-1]
+            level = p["stop_loss"] if why == "stop_loss" else p["take_profit"]
+            db.log_event("auto_exit", why, f"Sold {p['shares']} {p['ticker']} at {px:,.2f}: "
+                                           f"{why.replace('_', '-')} {level:,.2f} hit, P&L {pnl:+,.2f}")
         else:
             with db.engine().begin() as c:
                 c.execute(update(positions).where(positions.c.ticker == p["ticker"]).values(last_price=px))

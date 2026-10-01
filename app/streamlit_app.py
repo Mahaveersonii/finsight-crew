@@ -15,7 +15,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from finsight import broker, config, db, pipeline, rag  # noqa: E402
+from finsight import broker, config, db, market_clock, pipeline, rag  # noqa: E402
 from finsight.llm import model_chain  # noqa: E402
 
 MK = config.M
@@ -28,7 +28,20 @@ st.set_page_config(page_title=f"FinSight Crew · {MK['name']}", page_icon="📈"
 
 
 TZ_LABEL = {"America/New_York": "New York time", "Asia/Kolkata": "IST"}[MK["timezone"]]
-STATUS_WORDS = {"executed": "✅ traded", "no_action": "no trade", "vetoed": "⛔ blocked", "analysis_only": "analysis only"}
+STATUS_WORDS = {"executed": "✅ traded", "no_action": "no trade", "vetoed": "⛔ blocked", "analysis_only": "analysis only",
+                "pending": "⏳ waiting for market open", "superseded": "replaced by a newer decision", "expired": "expired"}
+ACTIVITY_KINDS = ("auto_exit", "order_queued", "order_filled", "order_cancelled", "crew_batch")
+ACTIVITY_ICON = {"auto_exit": "⚡", "order_queued": "⏳", "order_filled": "✅", "order_cancelled": "✖️", "crew_batch": "🤖"}
+
+
+def recent_activity(limit=20):
+    """Things the system did on its own: automatic exits, queued / filled orders, daily crew runs."""
+    rows = db.fetch_all("select ts, kind, detail from events where kind in "
+                        "('auto_exit','order_queued','order_filled','order_cancelled','crew_batch') "
+                        "order by id desc limit :n", n=limit)
+    for r in rows:
+        r["when"] = pd.Timestamp(r["ts"]).tz_localize("UTC").tz_convert(MK["timezone"]).strftime("%d %b %H:%M")
+    return rows
 
 
 def local_time(df, *cols):
@@ -82,6 +95,13 @@ with st.sidebar:
     st.title("📈 FinSight Crew")
     st.caption(f"Autonomous financial research & paper trading · CrewAI + Ollama + RAG over {MK['doc_name']}s")
     st.markdown(f"**Market:** {FLAG[config.MARKET]} {MK['name']} · {MK['currency']} · benchmark {BENCH}")
+    _ms = market_clock.status()
+    (st.success if _ms["open"] else st.error)(f"{'🟢' if _ms['open'] else '🔴'} **{_ms['label']}**, {_ms['detail']}")
+    _act = recent_activity(3)
+    if _act:
+        st.markdown("**Latest automatic activity**")
+        for a in _act:
+            st.caption(f"{ACTIVITY_ICON[a['kind']]} {a['when']} · {a['detail']}")
     for code, url in config.APP_URLS.items():
         if code != config.MARKET:
             from finsight.markets import MARKETS
@@ -192,7 +212,10 @@ with tab_run:
         k[2].metric("Take-profit", money(sig['take_profit'], 2))
         k[3].metric("Shares", (ex.get("plan") or {}).get("shares", 0) if ex["status"] == "executed" else 0)
         k[4].metric("Execution", STATUS_WORDS.get(ex["status"], ex["status"]))
-        if ex["status"] == "no_action":
+        if ex["status"] == "pending":
+            st.info(f"⏳ {ex['reason']}. The scheduler will buy at the opening price, with the stop-loss and "
+                    "size recalculated from that price.")
+        elif ex["status"] == "no_action":
             st.info("No trade placed: the decision was HOLD." if sig["action"] == "HOLD" else f"No trade placed: {ex.get('reason')}")
         elif ex.get("reason"):
             st.warning(f"Risk engine: {ex['reason']}")
@@ -247,6 +270,22 @@ with tab_port:
         right.plotly_chart(px.pie(pos, values="value", names="ticker", hole=0.5, title="Allocation"), width="stretch")
     else:
         left.info("No open positions yet - run the crew on a few tickers.")
+
+    st.markdown(f"#### ⚡ Automatic activity · times in {TZ_LABEL}")
+    st.caption("Everything the system did on its own: stop-loss / take-profit sales, orders queued while the "
+               "market was closed and filled at the open, and the daily crew runs.")
+    act = recent_activity(20)
+    if act:
+        for a in act:
+            st.markdown(f"{ACTIVITY_ICON[a['kind']]} **{a['when']}** · {a['detail']}")
+    else:
+        st.info("Nothing yet. Automatic sales, queued orders and daily crew runs will appear here.")
+
+    pend = pd.DataFrame(db.fetch_all(
+        "select ts, ticker, action, confidence, price as decided_at_price from signals where status = 'pending' order by ts"))
+    if not pend.empty:
+        st.markdown("#### ⏳ Orders waiting for the market to open")
+        st.dataframe(local_time(pend, "ts"), hide_index=True, width="stretch")
 
     st.markdown(f"#### Signals · times in {TZ_LABEL}")
     sigs = pd.DataFrame(db.fetch_all(

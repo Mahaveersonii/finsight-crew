@@ -576,6 +576,82 @@
      "rawSql": "select id, ticker, started_at as time, model, status, attempts, duration_s from runs order by id desc limit 30"
     }
    ]
+  },
+  {
+   "id": 14,
+   "type": "table",
+   "title": "\u26a1 Automatic activity (sales at stop-loss / take-profit, queued + filled orders, daily crew runs)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "${market}"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 37,
+    "w": 18,
+    "h": 9
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "${market}"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select ts as time, case kind when 'auto_exit' then 'automatic sale' when 'order_queued' then 'order queued (market closed)' when 'order_filled' then 'queued order filled' when 'order_cancelled' then 'queued order cancelled' when 'crew_batch' then 'daily crew run' end as action, detail from events where kind in ('auto_exit','order_queued','order_filled','order_cancelled','crew_batch') order by ts desc limit 50"
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "type": "stat",
+   "title": "Orders waiting for market open",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "${market}"
+   },
+   "gridPos": {
+    "x": 18,
+    "y": 37,
+    "w": 6,
+    "h": 9
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0,
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "#FADE2A"
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "none"
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "${market}"
+     },
+     "rawQuery": true,
+     "editorMode": "code",
+     "format": "table",
+     "rawSql": "select count(*) as pending from signals where status = 'pending'"
+    }
+   ]
   }
  ],
  "tags": [

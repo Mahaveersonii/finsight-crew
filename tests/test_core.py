@@ -291,3 +291,67 @@ def test_market_hours_gate():
     assert market_open(datetime(2026, 9, 30, 16, 15, tzinfo=ny))       # grace after close
     assert not market_open(datetime(2026, 9, 30, 20, 0, tzinfo=ny))    # evening
     assert not market_open(datetime(2026, 10, 3, 11, 0, tzinfo=ny))    # Saturday
+
+
+# --- market clock, order queue, automatic activity ------------------------------
+
+def _pending_signal(ticker, action="BUY", conf=0.8, minutes_ago=60):
+    from datetime import timedelta
+    with db.engine().begin() as c:
+        return c.execute(db.insert(db.signals).values(
+            ts=db.now() - timedelta(minutes=minutes_ago), ticker=ticker, action=action, confidence=conf,
+            price=100.0, stop_loss=90.0, take_profit=120.0, shares=0, status="pending")).inserted_primary_key[0]
+
+
+def test_market_clock_status_and_next_open():
+    from datetime import datetime
+    from finsight import market_clock as mc
+    sat = datetime(2026, 10, 3, 11, 0, tzinfo=mc.TZ)
+    assert not mc.is_open(sat)
+    assert mc.next_open(sat).weekday() == 0                     # Monday
+    assert mc.status(sat)["open"] is False and "opens" in mc.status(sat)["detail"]
+    wed = datetime(2026, 9, 30, 11, 0, tzinfo=mc.TZ)
+    assert mc.is_open(wed) and "closes" in mc.status(wed)["detail"]
+
+
+def test_buy_is_queued_while_market_closed(monkeypatch):
+    from finsight import market_clock
+    monkeypatch.setattr(market_clock, "is_open", lambda *a, **k: False)
+    res = broker.execute({"ticker": "AAA", "action": "BUY", "price": 100, "confidence": 0.8}, "Tech", 5.0,
+                         queue_if_closed=True)
+    assert res["status"] == "pending" and res["plan"]["shares"] == 100
+    assert not broker.open_positions() and not db.fetch_all("select * from trades")
+    assert db.fetch_all("select kind from events")[-1]["kind"] == "order_queued"
+
+
+def test_queued_order_fills_at_open_with_fresh_price(monkeypatch):
+    import pandas as pd
+    from finsight.tools import market_data as md
+    idx = pd.date_range("2026-06-01", periods=70, freq="B")
+    hist = pd.DataFrame({"High": 101.0, "Low": 99.0, "Close": 100.0}, index=idx)
+    monkeypatch.setattr(md, "get_price_history", lambda t, period="2y", run_id=None: hist)
+    monkeypatch.setattr(md, "get_fundamentals", lambda t, run_id=None: {"sector": "Tech"})
+    sid = _pending_signal("AAA")
+    done = broker.fill_pending(price_fn=lambda t: 105.0)
+    assert done == [("AAA", "BUY", "executed")]
+    pos = broker.open_positions()[0]
+    assert pos["avg_price"] == 105.0                            # filled at the open price, not the stale one
+    row = db.fetch_all("select status, price from signals where id = :i", i=sid)[0]
+    assert row["status"] == "executed" and row["price"] == 105.0
+    assert db.fetch_all("select kind from events")[-1]["kind"] == "order_filled"
+
+
+def test_newer_decision_supersedes_queued_order():
+    sid = _pending_signal("BBB", minutes_ago=120)
+    _pending_signal("BBB", action="HOLD", minutes_ago=10)       # newer decision for the same ticker
+    with db.engine().begin() as c:
+        c.execute(db.update(db.signals).where(db.signals.c.action == "HOLD").values(status="no_action"))
+    broker.fill_pending(price_fn=lambda t: 100.0)
+    assert db.fetch_all("select status from signals where id = :i", i=sid)[0]["status"] == "superseded"
+
+
+def test_automatic_exit_is_logged_with_details():
+    broker.execute({"ticker": "AAA", "action": "BUY", "price": 100, "confidence": 0.8}, "Tech", 5.0)
+    broker.mark_to_market(price_fn={"AAA": 89.0, "SPY": 500.0}.__getitem__)
+    ev = db.fetch_all("select kind, name, detail from events where kind = 'auto_exit'")[0]
+    assert ev["name"] == "stop_loss" and "Sold 100 AAA at 89.00" in ev["detail"] and "P&L -1,100.00" in ev["detail"]

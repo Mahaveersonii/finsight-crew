@@ -13,42 +13,46 @@ import sys
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-from . import broker, config, db, pipeline, rag
+from . import broker, config, db, market_clock, pipeline, rag
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("finsight.scheduler")
 
 
 def market_open(now=None, grace_min: int = 20) -> bool:
-    """True during the exchange's regular session (plus a grace period to capture the close).
-    Outside it prices do not move, so refreshing them only adds duplicate snapshots and log noise."""
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-
-    now = now or datetime.now(ZoneInfo(config.M["timezone"]))
-    (oh, om), (ch, cm) = config.M["market_hours"]
-    minutes = now.hour * 60 + now.minute
-    return now.weekday() < 5 and oh * 60 + om <= minutes <= ch * 60 + cm + grace_min
+    """Exchange session plus a grace period to capture the close (see market_clock)."""
+    return market_clock.is_open(now, grace_min=grace_min)
 
 
 def mark_to_market_job(force: bool = False):
     db.fail_stale_runs(minutes=15)
     if not force and not market_open():
         return
-    res = broker.mark_to_market()
+    if market_clock.is_open():                 # queued orders fill only in the live session
+        for ticker, action, outcome in broker.fill_pending():
+            log.info("queued %s %s -> %s", action, ticker, outcome)
+    res = broker.mark_to_market()               # also logs every automatic stop-loss / take-profit exit
     log.info("mark-to-market: equity=%s exits=%s", res["snapshot"]["equity"], res["exits"])
-    for ticker, reason, pnl in res["exits"]:
-        db.log_event("auto_exit", reason, f"{ticker} closed, P&L {pnl:.2f}")
 
 
 def crew_job():
+    counts, queued, failed = {"BUY": 0, "HOLD": 0, "SELL": 0}, 0, 0
     for ticker in config.WATCHLIST:
         try:
             res = pipeline.analyze(ticker)
+            counts[res["signal"]["action"]] = counts.get(res["signal"]["action"], 0) + 1
+            queued += res["execution"]["status"] == "pending"
             log.info("%s -> %s (%s)", ticker, res["signal"]["action"], res["execution"]["status"])
         except Exception as exc:  # noqa: BLE001 - one bad ticker must not stop the batch
+            failed += 1
             log.exception("crew failed for %s", ticker)
             db.log_event("error", "crew_job", f"{ticker}: {exc}")
+    summary = (f"Daily crew run: {len(config.WATCHLIST)} stocks analysed - BUY {counts['BUY']}, "
+               f"HOLD {counts['HOLD']}, SELL {counts['SELL']}"
+               + (f"; {queued} order(s) queued for the next open" if queued else "")
+               + (f"; {failed} failed" if failed else ""))
+    db.log_event("crew_batch", "scheduler", summary)
+    log.info(summary)
 
 
 def warm_rag():

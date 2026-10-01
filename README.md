@@ -109,7 +109,8 @@ Hybrid re-ranking lifts US Hit@3 from 61% to 78%. The misses (e.g. "who builds A
 | Analyst cites a passage it never retrieved | Report citations are checked after the run and flagged `⚠️unverified` | `citation_unverified` |
 | LLM misapplies the fund rules (e.g. BUY with composite < 70) | Deterministic policy check downgrades to HOLD | `risk_veto` (`policy:composite<70`) |
 | Signal breaches risk limits / low confidence | Trade vetoed | `risk_veto` |
-| Price hits stop / target between crew runs | Scheduler checks every 15 min during exchange hours and exits automatically | `auto_exit` |
+| Price hits stop / target between crew runs | Scheduler checks every 15 min during exchange hours and sells automatically; the sale appears in the activity feed with price and P&L | `auto_exit` |
+| A BUY/SELL is decided while the exchange is closed | The order is **queued** instead of filled at the stale closing price, then filled at the first price check after the next open, with stop-loss and size recalculated from that price. A newer decision for the same stock supersedes it; queued orders expire after 5 days | `order_queued`, `order_filled`, `order_cancelled` |
 | A tool raises | Tool returns `{"error", "hint"}` so the agent continues and reports the gap | `error` |
 | Process killed mid-run (restart, crash) | Run marked `interrupted` on next scheduler tick, so success rates stay truthful | `runs.status` |
 | Two crew runs at once | One run per process (the local 8B model serves one request at a time anyway); the second gets a clear "busy" message | UI |
@@ -123,6 +124,7 @@ Hybrid re-ranking lifts US Hit@3 from 61% to 78%. The misses (e.g. "who builds A
 * **Valuation:** P/E, EV/EBITDA, FCF yield, ROE, leverage; 10-year two-stage DCF (bear / base / bull) using reported free cash flow and a CAPM cost of equity; **reverse DCF** giving the FCF growth the current price implies.
 * **Quant score (0–100):** value 35% (DCF margin of safety, FCF yield, analyst upside) + quality 35% (ROE, net margin, leverage) + momentum 30% (12-month return, trend, RSI).
 * **Decision rules:** BUY if the verdict is Attractive (composite ≥ 70) and the risk engine allows shares; SELL if held and Unattractive (or composite < 50); else HOLD.
+* **Order timing:** decisions made outside exchange hours (NYSE 9:30–16:00 New York, NSE 9:15–15:30 IST) are queued and filled at the next open, as a real broker would. Exchange holidays are not modelled.
 * **Risk engine:** 1% of equity at risk per trade · stop = entry − 2 × ATR(14) · take-profit = 2R · ≤ 10% per position · ≤ 30% per sector · no positions smaller than 1% of equity · BUY needs confidence ≥ 0.55 · long-only.
 
 ### Backtest (`python scripts/run_backtest.py`)
@@ -189,7 +191,7 @@ python scripts/run_backtest.py            # backtest
 python scripts/reset_portfolio.py --yes   # clean slate before a demo
 python scripts/fetch_annual_reports.py    # India: download + verify the 6 annual reports
 MARKET=IN streamlit run app/streamlit_app.py   # any command runs in India mode with MARKET=IN
-pip install pytest && pytest -q           # 30 offline tests: valuation, chunking, guardrail, risk engine, fallbacks
+pip install pytest && pytest -q           # 35 offline tests: valuation, chunking, guardrail, risk engine, fallbacks
 ```
 
 Ollama runs on the host rather than in Docker so it can use the Apple-silicon GPU (Metal); containers reach it through `host.docker.internal:11434`.
@@ -210,7 +212,8 @@ finsight/
   report_bot.py      downloads + verifies the latest Indian annual reports
   broker.py          paper broker + risk engine
   backtest.py        rule-layer backtest
-  scheduler.py       always-on jobs (exchange-hours price checks, daily crew run)
+  scheduler.py       always-on jobs (exchange-hours price checks + queued-order fills, daily crew run)
+  market_clock.py    exchange hours, open/closed status, next open
   db.py              Postgres / SQLite persistence
   tools/
     market_data.py   Yahoo → SEC (US) → cache; prices cached per time span
@@ -219,7 +222,7 @@ finsight/
 app/streamlit_app.py control room (5 tabs, market switch in the sidebar)
 grafana/             provisioned datasources (US + India) + dashboard with a Market dropdown
 eval/                RAG eval sets + results (US and _in), backtest outputs
-tests/               30 offline pytest tests
+tests/               35 offline pytest tests
 scripts/             CLI entry points
 Modelfile            custom Ollama model
 docker-compose.yml   Postgres, app + scheduler per market, Grafana

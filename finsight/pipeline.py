@@ -129,13 +129,15 @@ def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
         with db.engine().begin() as c:
             c.execute(update(signals).where(signals.c.id == signal_id).values(status="analysis_only"))
     else:
-        execution = broker.execute(sig, sector, tech["atr_14"], run_id, signal_id)
+        execution = broker.execute(sig, sector, tech["atr_14"], run_id, signal_id, queue_if_closed=True)
         shares = (execution.get("plan") or {}).get("shares") or execution.get("shares") or 0
         with db.engine().begin() as c:
             c.execute(update(signals).where(signals.c.id == signal_id).values(
                 status=execution["status"], shares=shares if execution["status"] == "executed" else 0))
         broker.mark_to_market()
     emit(f"✅ {ticker}: {sig['action']} (confidence {sig['confidence']:.2f}) → {execution['status']}")
+    if execution["status"] == "pending":
+        emit(f"⏳ {execution['reason']}")
 
     report = "\n\n---\n\n".join(outputs)
     db.finish_run(run_id, status="success", model=used_model, attempts=attempts,

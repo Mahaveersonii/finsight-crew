@@ -75,8 +75,11 @@ def main():
         return
     tz, (hh, mm) = config.M["timezone"], config.M["crew_time"]
     sched = BlockingScheduler(timezone=tz)
-    sched.add_job(mark_to_market_job, "interval", minutes=15, id="mtm")
-    sched.add_job(crew_job, "cron", day_of_week="mon-fri", hour=hh, minute=mm, id="crew")
+    # If the laptop is asleep at the scheduled time, run the job when it wakes instead of skipping it
+    # (coalesce = run once even if several runs were missed).
+    sched.add_job(mark_to_market_job, "interval", minutes=15, id="mtm", coalesce=True, misfire_grace_time=600)
+    sched.add_job(crew_job, "cron", day_of_week="mon-fri", hour=hh, minute=mm, id="crew",
+                  coalesce=True, misfire_grace_time=12 * 3600)
     mark_to_market_job(force=True)   # one snapshot at start-up, whatever the time
     log.info("Scheduler started")
     sched.start()

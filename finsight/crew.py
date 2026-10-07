@@ -38,6 +38,27 @@ def norm_tag(c) -> str:
     return f"[{c}]"
 
 
+_SECTIONS = ("risk factors", "risk management", "md&a", "business & strategy", "business")
+
+
+def match_citation(c, real: list):
+    """Return the retrieved tag that citation `c` refers to, or None. Models often rewrite the
+    separators ("·" becomes "-" or "|"), drop the ticker or the brackets, so match on what
+    identifies a passage: its section and chunk number (and fiscal year and page, when given)."""
+    s = re.sub(r"\s+", " ", str(c)).lower()
+    num = re.search(r"#\s*(\d+)", s)
+    if not num:
+        return None
+    sec = next((x for x in _SECTIONS if x in s), None)
+    fy, page = re.search(r"fy\s*(\d{4})", s), re.search(r"\bp\s*(\d+)\b", s)
+    for r in real:
+        rs = r.lower()
+        if (re.search(rf"#{num.group(1)}\]", rs) and sec and sec in rs
+                and (not fy or f"fy{fy.group(1)}" in rs) and (not page or f" p{page.group(1)} " in rs)):
+            return r
+    return None
+
+
 def fact_check(sig: dict) -> list:
     """Compare the claims in the PM's rationale with the numbers the tools actually returned."""
     try:
@@ -53,7 +74,8 @@ def fact_check(sig: dict) -> list:
             wrong.append(f"composite score is {score}, not {claimed}")
     mos = (v.get("dcf") or {}).get("margin_of_safety_pct")
     if mos is not None:
-        if mos < 0 and re.search(r"positive margin of safety|below (the )?(intrinsic|fair|dcf)|undervalued", text):
+        if mos < 0 and re.search(r"positive margin of safety|below (the )?(intrinsic|fair|dcf)|undervalued"
+                                 r"|(dcf|intrinsic|fair value)[^.]{0,60}\bupside\b", text):
             wrong.append(f"the price is {abs(mos)}% ABOVE the base-case DCF value (margin of safety {mos}%)")
         if mos > 0 and re.search(r"negative margin of safety|above (the )?(intrinsic|fair|dcf)|overvalued", text):
             wrong.append(f"the price is {mos}% BELOW the base-case DCF value (margin of safety +{mos}%)")
@@ -79,7 +101,9 @@ def _check_signal(output):
     try:
         sig = extract_json(output.raw)
     except Exception as exc:  # noqa: BLE001
-        return False, f"Output must be ONE valid JSON object only. Parse error: {exc}"
+        if not T.RUN.get("submitted"):
+            return False, f"Output must be ONE valid JSON object only. Parse error: {exc}"
+        sig = dict(T.RUN["submitted"])  # the decision handed in through the json tool
     missing = SIGNAL_KEYS - sig.keys()
     if missing:
         return False, f"JSON is missing required keys: {sorted(missing)}"
@@ -94,17 +118,22 @@ def _check_signal(output):
         sig["confidence"] /= 100
     if not 0 <= sig["confidence"] <= 1:
         return False, "confidence must be between 0 and 1"
-    if not isinstance(sig["citations"], list) or not sig["citations"]:
-        return False, f"citations must be a non-empty list of the {DOC} citation tags used by the analyst, e.g. '{EX_TAG}'"
     if not isinstance(sig["key_risks"], list):
         return False, "key_risks must be a list of strings"
-    real = {norm_tag(c) for c in T.RUN["citations"]}
+    given = sig["citations"] if isinstance(sig["citations"], list) else []
+    real = sorted({norm_tag(c) for c in T.RUN["citations"]})
+    if not real and not given:
+        return False, f"citations must be a non-empty list of the {DOC} citation tags used by the analyst, e.g. '{EX_TAG}'"
     if real:
-        valid = [norm_tag(c) for c in sig["citations"] if norm_tag(c) in real]
+        valid = list(dict.fromkeys(m for c in given if (m := match_citation(c, real))))
         if not valid:
-            return False, ("None of your citations were actually retrieved. Use only these exact tags from "
-                           f"search_annual_report: {sorted(real)[:6]}")
-        sig["citations"] = valid  # silently drop any invented extras
+            # Evidence is bookkeeping, not judgement: instead of spending a retry, attach passages the
+            # analyst really retrieved. Invented tags never reach the output, and the swap is logged.
+            valid = real[:3]
+            db.log_event("citation_autofix", "portfolio_manager",
+                         f"gave {[str(c)[:80] for c in given[:4]]}; attached retrieved {valid}", T.RUN["run_id"])
+            T.notify("🧾 PM citations were not from the retrieved passages; attached the real ones instead")
+        sig["citations"] = valid  # canonical tags; invented extras are dropped
     wrong = fact_check(sig)
     if wrong:
         return False, "Your rationale contradicts the tool results: " + "; ".join(wrong) + ". Rewrite it with the correct facts."
@@ -112,6 +141,24 @@ def _check_signal(output):
         return False, ("You answered without calling the plan_position tool. Call get_portfolio_state and "
                        "plan_position first, then copy stop_loss, take_profit and shares from plan_position.")
     return True, json.dumps(sig)
+
+
+def _fact_sheet(ticker: str) -> str:
+    """The numbers the PM must not guess. Small models misremember them (e.g. 'composite 75' when it
+    is 60), so they are handed over verbatim; the fact-check guardrail still verifies the rationale."""
+    try:
+        v, tc = T.valuation(ticker), T.tech(ticker)
+    except Exception:  # noqa: BLE001 - no data: the PM falls back to the analyst report
+        return ""
+    qs, dcf = v["quant_score"], v.get("dcf") or {}
+    mos = dcf.get("margin_of_safety_pct")
+    where = "" if mos is None else (" - the price is ABOVE the DCF value" if mos < 0 else " - the price is BELOW the DCF value")
+    return ("FACT SHEET (exact tool results - quote these numbers, never estimate them):\n"
+            f"- composite score {qs['composite']} (value {qs['value']}, quality {qs['quality']}, momentum {qs['momentum']})\n"
+            f"- price {v.get('price')} {CUR}; base-case DCF value {(dcf.get('scenarios') or {}).get('base')}; "
+            f"margin of safety {mos}%{where}\n"
+            f"- trend {tc.get('trend')}; RSI {tc.get('rsi_14')}\n"
+            f"- risk flags: {'; '.join(v.get('risk_flags') or []) or 'none'}\n")
 
 
 def build_crew(ticker: str, llm, step_callback=None) -> Crew:
@@ -156,6 +203,8 @@ def build_crew(ticker: str, llm, step_callback=None) -> Crew:
             f"2. Call search_annual_report for '{ticker}' with question 'key business risks and competitive threats'.\n"
             f"3. Call search_annual_report for '{ticker}' with question 'revenue growth drivers and management outlook'.\n"
             f"4. Call get_past_decisions with '{ticker}'.\n"
+            + (f"5. Call get_filing_changes with '{ticker}' to see what changed in the annual report since last year.\n"
+               if config.MARKET == "US" else "") +
             "Then write an ANALYST REPORT with these sections:\n"
             "- Valuation: P/E, EV/EBITDA, FCF yield, DCF bear/base/bull, margin of safety, and the market-implied FCF growth "
             "(reverse DCF). The DCF is deliberately conservative, so judge valuation mainly by asking: is the market-implied "
@@ -165,6 +214,8 @@ def build_crew(ticker: str, llm, step_callback=None) -> Crew:
             f"- Bear case / risks: 2-3 points, each ending with the exact citation tag from search_annual_report, e.g. {EX_TAG}.\n"
             "- Risk flags: list the risk_flags from run_valuation.\n"
             "- Memory: how this view compares with past decisions.\n"
+            + ("- What changed since last year: similarity of Risk Factors and MD&A to last year, the concern level and "
+               "the most important new risks, with their tags from get_filing_changes.\n" if config.MARKET == "US" else "") +
             "- Verdict: Attractive / Neutral / Unattractive, with one sentence why. Guide: composite >= 70 with plausible "
             "implied growth -> Attractive; composite < 50 or implausible implied growth with serious risks -> Unattractive.\n"
             "Do not invent numbers or citations."
@@ -176,18 +227,20 @@ def build_crew(ticker: str, llm, step_callback=None) -> Crew:
     t_decide = Task(
         description=(
             f"Ticker: {ticker}. Using the ANALYST REPORT:\n"
+            + _fact_sheet(ticker) +
             "You MUST call both tools before answering - an answer without them is rejected:\n"
-            "1. Call get_portfolio_state.\n"
+            f"1. Call get_portfolio_state with '{ticker}'.\n"
             f"2. Call plan_position with '{ticker}'.\n"
             "3. Decide using these fund rules:\n"
             "   - BUY if the analyst verdict is Attractive (composite score >= 70) and plan_position allows shares > 0.\n"
             "   - SELL if we already hold the stock and the verdict is Unattractive (or composite < 50).\n"
             "   - Otherwise HOLD.\n"
             "   Confidence (0-1): start from composite/100, subtract 0.05 for each risk flag, never above 0.9.\n"
+            "You may submit the decision with the json tool, but your final answer must still be the JSON object.\n"
             "Return ONLY a JSON object, no prose, with exactly these keys:\n"
             '{"ticker": "...", "action": "BUY|HOLD|SELL", "confidence": 0.0, "time_horizon": "e.g. 3-6 months", '
             '"rationale": "2-3 sentences citing valuation numbers", "key_risks": ["...", "..."], '
-            '"citations": ["<exact citation tags returned by search_annual_report>", "..."], '
+            '"citations": ["<1-3 citation tags copied exactly from the ANALYST REPORT; never invent one>"], '
             '"stop_loss": <number from plan_position>, "take_profit": <number from plan_position>, "shares": <number from plan_position or 0>}'
         ),
         expected_output="One valid JSON object with the keys listed. No markdown, no extra text.",

@@ -77,16 +77,24 @@ def _analyze(ticker: str, on_event=None, execute_trade: bool = True) -> dict:
     # 2. Crew, with model fallback.
     result, used_model, attempts = None, None, 0
     for model in chain:
-        attempts += 1
-        emit(f"🤖 Running crew on {model}")
-        try:
-            crew = build_crew(ticker, make_llm(model))
-            result = crew.kickoff()
-            used_model = model
+        for retry in (False, True):
+            attempts += 1
+            emit(f"🤖 Running crew on {model}" + (" (retry)" if retry else ""))
+            try:
+                crew = build_crew(ticker, make_llm(model))
+                result = crew.kickoff()
+                used_model = model
+                break
+            except Exception as exc:  # noqa: BLE001
+                db.log_event("llm_fallback", model, f"{type(exc).__name__}: {exc}", run_id)
+                # A malformed tool call is a one-off slip by the model, not a broken model: retry it once.
+                if not retry and "tool_use_failed" in str(exc):
+                    emit(f"⚠️ {model} made a malformed tool call — retrying once")
+                    continue
+                emit(f"⚠️ {model} failed ({type(exc).__name__}) — falling back to next model")
+                break
+        if result is not None:
             break
-        except Exception as exc:  # noqa: BLE001
-            db.log_event("llm_fallback", model, f"{type(exc).__name__}: {exc}", run_id)
-            emit(f"⚠️ {model} failed ({type(exc).__name__}) — falling back to next model")
     if result is None:
         db.finish_run(run_id, status="failed", attempts=attempts, duration_s=time.time() - t0)
         raise RuntimeError("All models in the fallback chain failed")

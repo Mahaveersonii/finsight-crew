@@ -12,7 +12,7 @@
 | 341294 | Vineet Intodia |
 | 65089 | Mahaveer Soni |
 
-A three-agent CrewAI system that researches **US and Indian** stocks from live market data **and the companies' own SEC 10-K filings (RAG)**, values them with a DCF and multiples, and turns the research into risk-managed **paper trades**, running continuously on a scheduler. Everything runs locally and for free: **Ollama (Qwen3 8B)** as the LLM, **ChromaDB** as the vector store, **PostgreSQL** for state, **Streamlit** as the control room and **Grafana** for monitoring.
+A three-agent CrewAI system that researches **US and Indian** stocks from live market data **and the companies' own SEC 10-K filings (RAG)**, values them with a DCF and multiples, and turns the research into risk-managed **paper trades**, running continuously on a scheduler. Everything runs on free tiers: **Groq** (gpt-oss-120b, with gpt-oss-20b and Qwen 3.8 as backups) as the LLM, **Ollama** on the laptop for embeddings, **ChromaDB** as the vector store, **PostgreSQL** for state, **Streamlit** as the trading desk and **Grafana** for monitoring.
 
 > Paper trading only. Nothing here is investment advice.
 
@@ -38,9 +38,24 @@ A three-agent CrewAI system that researches **US and Indian** stocks from live m
 
 Switch markets with the sidebar button in Streamlit or the **Market** dropdown in Grafana. The six Indian companies were chosen because their data is clean: statements in rupees (HCL Tech reports in USD), positive free cash flow in each of the last three years, and a report downloadable from the company's own site (TCS and BSE block automated downloads, so they were not used).
 
+## What is new in v2 (end-term)
+
+| Area | v1 (mid-term) | v2 |
+|---|---|---|
+| New capability | – | **Filing Change Analyst**: compares this year's 10-K with last year's (Risk Factors, MD&A), labels every paragraph unchanged / edited / new / removed, and a new agent explains what changed with paragraph citations. Based on *Lazy Prices* (Cohen, Malloy & Nguyen, Journal of Finance 2020). New **What changed** tab with word-level diffs; the Financial Analyst uses it as a tool. |
+| AI model | Qwen3 8B on the laptop (minutes per stock) | gpt-oss-120b on Groq's free API, 28–122 s per stock; backups gpt-oss-20b and Qwen 3.8 27B |
+| Agent reliability | 41 guardrail rejections in 39 runs | PM gets an exact **fact sheet** from code; citations matched by section / number / year / page and **replaced by real retrieved passages** instead of retried; malformed tool calls retried once; 0 rejections in the 5 runs measured after the fix |
+| Screens | Default Streamlit | Trading-desk design: candlesticks + volume, score gauge, decision card with risk/reward bar, **Scanner** tab, risk meters, drawdown charts, **prices refreshing every 60 s** in market hours, live 6-step agent tracker |
+| Ask the Report | Called the local model directly | Uses the same model chain as the agents |
+| Tests | 35 | 40 |
+
+The rule behind most changes: **the AI makes judgements; code supplies the facts and checks the work.**
+
 ## 1. Architecture
 
-![FinSight Crew workflow: data sources, three AI agents, guardrails, risk officer, storage and screens, for the US and India markets](docs/architecture.svg)
+![FinSight Crew v2 architecture: data sources, report library, three AI agents on Groq, guardrails, risk officer, paper broker, storage and screens, for the US and India markets](docs/architecture.svg)
+
+A PNG copy for slides is in `docs/architecture.png`.
 
 The same diagram is used in the team guide. Regenerate it after changing the layout with `python docs/make_architecture_diagram.py`.
 
@@ -49,8 +64,9 @@ The same diagram is used in the team guide. Regenerate it after changing the lay
 | Agent | Tools | Output |
 |---|---|---|
 | **Market Data Extractor** | `get_market_snapshot` (price, SMA50/200, RSI, ATR, returns, volatility, drawdown) · `get_fundamentals` (Yahoo → SEC XBRL fallback) | Data brief |
-| **Financial Analyst** | `run_valuation` (P/E, EV/EBITDA, FCF yield, 3-scenario 10-year DCF, reverse DCF, value/quality/momentum score, risk flags) · `search_annual_report` (**RAG** over the 10-K or Indian annual report) · `get_past_decisions` (memory) | Analyst report with cited evidence |
-| **Portfolio Manager** | `get_portfolio_state` · `plan_position` (ATR stop, 2R target, 1%-risk sizing, caps) | Strict JSON signal: BUY/HOLD/SELL, confidence, stop-loss, take-profit, shares, rationale, risks, citations |
+| **Financial Analyst** | `run_valuation` (P/E, EV/EBITDA, FCF yield, 3-scenario 10-year DCF, reverse DCF, value/quality/momentum score, risk flags) · `search_annual_report` (**RAG** over the 10-K or Indian annual report) · `get_past_decisions` (memory) · `get_filing_changes` (US: what changed since last year's 10-K) | Analyst report with cited evidence |
+| **Portfolio Manager** | `get_portfolio_state` · `plan_position` (ATR stop, 2R target, 1%-risk sizing, caps) · `json` (hands in the decision; gpt-oss models prefer this) · receives a code-built **fact sheet** | Strict JSON signal: BUY/HOLD/SELL, confidence, stop-loss, take-profit, shares, rationale, risks, citations |
+| **Filing Change Analyst** (v2) | Reads only the new / edited / removed paragraphs found by code (`finsight/filing_changes.py`) | Headline, concern (Low/Medium/High), tone, new risks and removed items, each with paragraph tags; cached per pair of filings |
 
 **The LLM never does arithmetic.** All numbers come from Python tools; the agents reason about them and explain.
 
@@ -99,13 +115,15 @@ Hybrid re-ranking lifts US Hit@3 from 61% to 78%. The misses (e.g. "who builds A
 
 | Failure | Recovery | Where to see it |
 |---|---|---|
-| Primary LLM down / errors | Fallback chain `finsight-qwen3 → qwen3:8b → llama3.2 → Groq → Gemini` | `events.kind = llm_fallback` |
+| Primary LLM down / errors / daily limit reached | Fallback chain from `.env` (default v2: Groq `gpt-oss-120b → gpt-oss-20b → qwen3.8-27b`, local Ollama models if installed) | `events.kind = llm_fallback` |
+| Model makes a malformed tool call | Same model retried once before falling back | `llm_fallback` |
 | Yahoo Finance fails | Fundamentals: SEC EDGAR XBRL facts (US; freshest annual value across tags, nothing older than 18 months, incomplete filings rejected) → last cached copy. Prices: last cached copy for the same time span (each span cached separately, so the 5-day price check never overwrites the 2-year history), flagged stale | `data_fallback` |
 | Postgres down | Automatic SQLite fallback | sidebar "Database" |
 | PM returns malformed JSON / skips its sizing tool / no citations | CrewAI **guardrail** rejects with a specific message; agent retries (max 3) | `guardrail_retry` |
 | LLM proposes a wrong stop-loss or size | Deterministic risk engine overrides it | `risk_override` |
 | PM's rationale contradicts the tool numbers (e.g. says "composite 72" when it is 55, "uptrend" in a downtrend) | Fact-check guardrail compares the rationale with the tool results and sends it back with the correct figures | `guardrail_retry` |
-| PM cites a passage it never retrieved | Guardrail checks every citation against the passages actually returned by `search_annual_report` in this run (ignoring brackets/quotes/spacing the model may drop); invented tags are dropped, none valid → retry | `guardrail_retry` |
+| PM cites a passage it never retrieved | Citations are matched to the passages actually returned by `search_annual_report` by section, passage number, year and page (separators and brackets ignored). Invented tags are dropped; if none are real, the passages really retrieved are attached instead of spending a retry | `citation_autofix` |
+| PM misquotes a number | The PM receives a fact sheet (score, price, DCF value, margin of safety, trend, flags) built by code, and the fact-check guardrail still verifies the rationale | `guardrail_retry` |
 | Analyst cites a passage it never retrieved | Report citations are checked after the run and flagged `⚠️unverified` | `citation_unverified` |
 | LLM misapplies the fund rules (e.g. BUY with composite < 70) | Deterministic policy check downgrades to HOLD | `risk_veto` (`policy:composite<70`) |
 | Signal breaches risk limits / low confidence | Trade vetoed | `risk_veto` |
@@ -153,20 +171,31 @@ US: 149 trades, 43% win rate, average win +10.0% vs average loss −4.8%, **aver
 
 ## 5. Run it
 
-**Prerequisites:** macOS/Linux, Docker Desktop, [Ollama](https://ollama.com), Python 3.11.
+**Prerequisites:** macOS/Linux, Docker Desktop, [Ollama](https://ollama.com), Python 3.11, a free [Groq API key](https://console.groq.com/keys).
 
 ```bash
-# 1. Models (≈5.5 GB)
-ollama pull qwen3:8b
+# 1. Embedding model for report search (274 MB)
 ollama pull nomic-embed-text
-ollama create finsight-qwen3 -f Modelfile      # tuned temperature, 16K context, system prompt
 
-# 2. Config
-cp .env.example .env                            # optional: SEC_IDENTITY, cloud API keys
+# 2. Python
+python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-# 3. Full stack: Postgres + Streamlit + scheduler + Grafana
-docker compose up -d --build
+# 3. Config: copy, then paste your Groq key into .env (never commit .env)
+cp .env.example .env
+
+# 4. Postgres + Grafana in Docker
+docker compose up -d postgres grafana
+
+# 5. Apps and schedulers (one terminal each)
+.venv/bin/streamlit run app/streamlit_app.py --server.port 8502             # US
+MARKET=IN .venv/bin/streamlit run app/streamlit_app.py --server.port 8503   # India
+.venv/bin/python -m finsight.scheduler                                      # US autopilot
+MARKET=IN .venv/bin/python -m finsight.scheduler                            # India autopilot
 ```
+
+**Groq free plan:** about 200,000 tokens per model per day, roughly 10 full analyses per model. The schedulers analyse all six stocks after each close, so stop them before a demo day if you need the allowance for live runs.
+
+To run fully offline instead, pull a local model (`ollama pull qwen3:8b`, `ollama create finsight-qwen3 -f Modelfile`) and set `PRIMARY_MODEL=ollama/finsight-qwen3` in `.env`. `docker compose up -d --build` still starts the original six-container stack.
 
 On first start the India scheduler downloads the six annual reports from the companies' websites and indexes them (about 2 minutes); the US scheduler indexes the six 10-Ks.
 
@@ -191,7 +220,7 @@ python scripts/run_backtest.py            # backtest
 python scripts/reset_portfolio.py --yes   # clean slate before a demo
 python scripts/fetch_annual_reports.py    # India: download + verify the 6 annual reports
 MARKET=IN streamlit run app/streamlit_app.py   # any command runs in India mode with MARKET=IN
-pip install pytest && pytest -q           # 35 offline tests: valuation, chunking, guardrail, risk engine, fallbacks
+pip install pytest && pytest -q           # 40 offline tests: valuation, chunking, guardrails, citations, risk engine, filing comparison
 ```
 
 Ollama runs on the host rather than in Docker so it can use the Apple-silicon GPU (Metal); containers reach it through `host.docker.internal:11434`.
@@ -208,6 +237,7 @@ finsight/
   pipeline.py        end-to-end run for one ticker
   markets.py         per-market settings (US / India)
   rag.py             10-K / annual-report ingestion, hybrid retrieval, grounded Q&A
+  filing_changes.py  v2: year-on-year 10-K comparison + Filing Change Analyst agent
   pdf_reports.py     section-aware text extraction from Indian annual-report PDFs
   report_bot.py      downloads + verifies the latest Indian annual reports
   broker.py          paper broker + risk engine
@@ -219,14 +249,16 @@ finsight/
     market_data.py   Yahoo → SEC (US) → cache; prices cached per time span
     valuation.py     ratios, DCF, reverse DCF, quant score
     crew_tools.py    CrewAI tool wrappers (logged, cached, never raise)
-app/streamlit_app.py control room (5 tabs, market switch in the sidebar)
+app/streamlit_app.py trading desk (7 tabs: desk, scanner, what changed, portfolio, ask, backtest, agent ops)
+app/ui.py            theme, Plotly template and HTML components
+.streamlit/          dark theme config
 grafana/             provisioned datasources (US + India) + dashboard with a Market dropdown
 eval/                RAG eval sets + results (US and _in), backtest outputs
-tests/               35 offline pytest tests
+tests/               40 offline pytest tests
 scripts/             CLI entry points
 Modelfile            custom Ollama model
 docker-compose.yml   Postgres, app + scheduler per market, Grafana
-docs/                architecture.svg + the script that draws it
+docs/                architecture.svg / .png + the script that draws them
 ```
 
 ## 7. Rubric mapping
@@ -240,10 +272,12 @@ docs/                architecture.svg + the script that draws it
 
 ## 8. Limitations
 
-* Qwen3 8B on a laptop takes ~2 minutes per ticker; a cloud model (Groq) is faster but rate-limited.
+* Groq's free plan allows about 10 full analyses per model per day; the schedulers' daily runs share that allowance with manual runs.
+* The year-on-year filing comparison covers US 10-Ks; India needs last year's annual-report PDFs as well. Some 10-Ks (JPM, XOM) keep MD&A in a separate exhibit, so only Risk Factors is compared for them.
 * The DCF is deliberately conservative (cost of equity used as the discount rate), so the reverse DCF carries more weight in decisions.
 * Yahoo Finance is unofficial and can change without notice; SEC fallback covers fundamentals, cache covers prices.
 * The backtest covers the rules, not the agents (see §4).
 * India: section labels come from page content (Indian reports have no standard structure), so a few pages are labelled imperfectly; PDF text is noisier than SEC HTML, which is why India retrieval scores trail the US.
 * India: there is no free official structured-data API like SEC XBRL, so the fundamentals fallback is Yahoo → cache only.
-* The Portfolio Manager often skips its sizing tool on the first attempt; the guardrail sends it back (about 20 s per run). CrewAI cannot force a tool call.
+* The Portfolio Manager sometimes skips its sizing tool on the first attempt; the guardrail sends it back. CrewAI cannot force a tool call.
+* Exchange holidays are treated as open days (prices simply do not move).

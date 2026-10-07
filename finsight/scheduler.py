@@ -61,6 +61,14 @@ def warm_rag():
             log.info("RAG %s", rag.ingest_ticker(ticker))
         except Exception as exc:  # noqa: BLE001
             log.warning("RAG ingest failed for %s: %s", ticker, exc)
+    if config.MARKET == "US":  # compare this year's 10-K with last year's (cached: runs once per new filing)
+        from . import filing_changes
+        for ticker in config.WATCHLIST:
+            try:
+                r = filing_changes.analyse(ticker)
+                log.info("filing changes %s: %s", ticker, (r.get("summary") or {}).get("concern"))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("filing comparison failed for %s: %s", ticker, exc)
 
 
 def main():

@@ -15,7 +15,7 @@ from . import market_data as md
 from . import valuation as val
 
 # Per-run context: run id for logging + a cache so each API is hit once per run.
-RUN = {"run_id": None, "cache": {}, "called": [], "citations": set(), "on_event": None}
+RUN = {"run_id": None, "cache": {}, "called": [], "citations": set(), "on_event": None, "submitted": None}
 
 
 def reset_run(run_id):
@@ -23,6 +23,7 @@ def reset_run(run_id):
     RUN["cache"] = {}
     RUN["called"] = []
     RUN["citations"] = set()
+    RUN["submitted"] = None
 
 
 def notify(msg):
@@ -177,13 +178,27 @@ def get_past_decisions(ticker: str) -> str:
                       default=str)
 
 
+@tool("get_filing_changes")
+@_logged
+def get_filing_changes(ticker: str) -> str:
+    """What the company changed in its annual report since last year: how similar the Risk Factors and
+    MD&A sections are to last year's, how many paragraphs are new or removed, and the new risks with
+    citation tags. Big rewrites of Risk Factors have historically preceded weaker returns."""
+    t = _clean_ticker(ticker)
+    if config.MARKET != "US":
+        return json.dumps({"available": False, "reason": "Year-on-year comparison is available for US 10-Ks only."})
+    from .. import filing_changes
+    return json.dumps(_cached(("changes", t), lambda: filing_changes.brief(t)))
+
+
 # --- Portfolio Manager tools ------------------------------------------------
 
 @tool("get_portfolio_state")
 @_logged
-def get_portfolio_state() -> str:
+def get_portfolio_state(ticker: str = "") -> str:
     """Current paper portfolio: cash, equity, open positions, sector weights and
-    the fund's hard risk limits. Takes no input."""
+    the fund's hard risk limits. Pass the ticker you are deciding on (the result
+    is the same for any ticker)."""
     return json.dumps(broker.portfolio_summary())
 
 
@@ -199,6 +214,21 @@ def plan_position(ticker: str) -> str:
     return json.dumps(broker.plan_trade(t, tc["last_close"], tc["atr_14"], f.get("sector") or "Unknown"))
 
 
+@tool("json")
+@_logged
+def submit_decision(ticker: str, action: str, confidence: float, time_horizon: str, rationale: str,
+                    key_risks: list[str], citations: list[str], stop_loss: float = 0.0, take_profit: float = 0.0,
+                    shares: int = 0) -> str:
+    """Submit the final trading decision as structured fields, after calling plan_position.
+    Use the exact citation tags returned by search_annual_report."""
+    # gpt-oss models like to hand in their answer through a tool called "json"; providers reject
+    # calls to tools that do not exist, so we accept it and let the guardrail check it as usual.
+    RUN["submitted"] = {"ticker": ticker, "action": action, "confidence": confidence, "time_horizon": time_horizon,
+                        "rationale": rationale, "key_risks": key_risks, "citations": citations,
+                        "stop_loss": stop_loss, "take_profit": take_profit, "shares": shares}
+    return "Decision received. Now end with the same decision as one JSON object and nothing else."
+
+
 EXTRACTOR_TOOLS = [get_market_snapshot, get_fundamentals]
-ANALYST_TOOLS = [run_valuation, search_annual_report, get_past_decisions]
-PM_TOOLS = [get_portfolio_state, plan_position]
+ANALYST_TOOLS = [run_valuation, search_annual_report, get_past_decisions, get_filing_changes]
+PM_TOOLS = [get_portfolio_state, plan_position, submit_decision]

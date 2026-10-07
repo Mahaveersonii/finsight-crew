@@ -97,11 +97,11 @@ def test_guardrail_rejects_bad_output(bad, msg):
     assert not ok and msg in err
 
 
-def test_guardrail_rejects_fabricated_citations_and_missing_tool():
+def test_guardrail_replaces_fabricated_citations_and_rejects_missing_tool():
     T.RUN["citations"] = {"[AAPL 10-K FY2025 · MD&A · #1]"}
     T.RUN["called"] = ["plan_position"]
-    ok, err = validate_signal(_out(GOOD))
-    assert not ok and "actually retrieved" in err
+    ok, value = validate_signal(_out(GOOD))  # invented tag -> replaced by the passage really retrieved
+    assert ok and json.loads(value)["citations"] == ["[AAPL 10-K FY2025 · MD&A · #1]"]
     T.RUN["citations"] = {"[AAPL 10-K FY2025 · Risk Factors · #4]"}
     T.RUN["called"] = []
     ok, err = validate_signal(_out(GOOD))
@@ -249,7 +249,16 @@ def test_guardrail_accepts_citations_without_brackets():
     T.RUN["called"] = ["plan_position"]
     T.RUN["citations"] = {tag}
     ok, value = validate_signal(_out({**GOOD, "citations": ["ITC.NS AR FY2026 · MD&A · p67 #92", " [ITC.NS  AR FY2026 · MD&A · p67 #92 ] "]}))
-    assert ok and json.loads(value)["citations"] == [tag, tag]
+    assert ok and json.loads(value)["citations"] == [tag]  # same passage twice -> listed once
+
+
+def test_guardrail_accepts_rewritten_separators_but_not_other_years():
+    from finsight.crew import match_citation
+    real = ["[AAPL 10-K FY2025 · Risk Factors · #10]"]
+    assert match_citation("AAPL 10-K FY2025 | Risk Factors | #10", real) == real[0]
+    assert match_citation("[AAPL 10-K FY2025 - Risk Factors - #10]", real) == real[0]
+    assert match_citation("[AAPL 10-K FY1999 · Risk Factors · #10]", real) is None
+    assert match_citation("[AAPL 10-K FY2025 · MD&A · #10]", real) is None
 
 
 def test_fact_check_catches_contradicted_numbers(monkeypatch):
@@ -355,3 +364,49 @@ def test_automatic_exit_is_logged_with_details():
     broker.mark_to_market(price_fn={"AAA": 89.0, "SPY": 500.0}.__getitem__)
     ev = db.fetch_all("select kind, name, detail from events where kind = 'auto_exit'")[0]
     assert ev["name"] == "stop_loss" and "Sold 100 AAA at 89.00" in ev["detail"] and "P&L -1,100.00" in ev["detail"]
+
+
+def test_guardrail_uses_decision_submitted_through_json_tool():
+    T.RUN["called"] = ["plan_position"]
+    T.RUN["citations"] = {"[AAPL 10-K FY2025 · Risk Factors · #4]"}
+    T.RUN["submitted"] = dict(GOOD)
+    ok, value = validate_signal(_out("Decision submitted."))
+    T.RUN["submitted"] = None
+    assert ok and json.loads(value)["action"] == "BUY"
+
+
+# --- Filing Change Analyst ---------------------------------------------------
+
+def test_cut_section_skips_table_of_contents():
+    from finsight.filing_changes import SECTIONS, cut_section
+    toc = "Item 1A. Risk Factors 5\nItem 1B. Unresolved Staff Comments 17\nItem 2. Properties 18\n" + "x " * 200
+    body = "Item 1A. Risk Factors\n" + "Real risk text. " * 40 + "\nItem 1B. Unresolved Staff Comments\nnone\n"
+    out = cut_section(toc + "\n" + body, *SECTIONS["Risk Factors"])
+    assert out.startswith("Item 1A. Risk Factors\nReal risk text") and "Unresolved" not in out
+
+
+def test_compare_classifies_unchanged_edited_new_and_removed():
+    import numpy as np
+    from finsight.filing_changes import compare
+    base = "The Company depends on component suppliers in Asia and any disruption could hurt results "
+    old = [base + "materially.", "Interest rates may rise and reduce demand for financed purchases across markets.",
+           "Legacy product line X may be discontinued which would reduce revenue from older customers."]
+    new = [base + "materially.", base + "materially and quickly, including new tariffs on imported parts.",
+           "New online safety laws may require age verification for all app store users worldwide today."]
+    out = compare(new, old, embed=lambda t: np.ones((len(t), 4)) / 2)  # equal meaning scores: words decide
+    assert out["unchanged"] == 1
+    assert [d["n"] for d in out["edited"]] == [2]
+    assert [d["n"] for d in out["added"]] == [3]
+    assert {d["n"] for d in out["removed"]} == {2, 3}
+
+
+def test_lazy_prices_similarity_and_explanation_guardrail():
+    from finsight.filing_changes import _check, cosine_similarity, tag
+    assert cosine_similarity("risk of tariffs on parts", "risk of tariffs on parts") == 1.0
+    assert cosine_similarity("risk of tariffs", "weather was sunny") == 0.0
+    real = tag("AAPL", "2025", "Risk Factors", "new", 84)
+    raw = json.dumps({"headline": "h", "concern": "high", "tone": "t", "removed_or_softened": [],
+                      "new_risks": [{"risk": "online safety", "citations": [real]},
+                                    {"risk": "invented", "citations": ["[AAPL 10-K FY2025 · Risk Factors · new ¶999]"]}]})
+    ok, out = _check(raw, {real})
+    assert ok and out["concern"] == "High" and [r["risk"] for r in out["new_risks"]] == ["online safety"]

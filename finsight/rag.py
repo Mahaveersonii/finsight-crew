@@ -268,9 +268,18 @@ def answer(ticker: str, question: str, k: int = 4) -> dict:
         "If the passages do not contain the answer, say so plainly.\n\n"
         f"PASSAGES:\n{context}\n\nQUESTION: {question}\nANSWER (max 150 words):"
     )
-    model = config.PRIMARY_MODEL.split("/", 1)[-1]
+    from .llm import make_llm, model_chain  # local import: llm imports crewai, which is slow to load
+
     t0 = time.time()
-    resp = _ollama().chat(model=model, messages=[{"role": "user", "content": prompt}], think=False,
-                          options={"temperature": 0.1})
+    text, last_err = None, None
+    for model in model_chain():  # same fallback chain as the agents (Groq, then any other configured model)
+        try:
+            text = str(make_llm(model).call(prompt)).strip()
+            break
+        except Exception as exc:  # noqa: BLE001
+            last_err = exc
+            db.log_event("llm_fallback", model, f"rag_answer: {type(exc).__name__}: {exc}")
+    if text is None:
+        raise RuntimeError(f"No AI model could answer: {last_err}")
     db.log_event("rag_answer", ticker.upper(), question, duration_ms=(time.time() - t0) * 1000)
-    return {"answer": resp.message.content.strip(), "sources": hits}
+    return {"answer": text, "sources": hits}

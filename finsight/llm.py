@@ -14,6 +14,8 @@ from . import config
 
 log = logging.getLogger(__name__)
 
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+
 
 def ollama_models() -> set:
     try:
@@ -32,9 +34,9 @@ def model_chain() -> list:
             continue
         if m not in chain:
             chain.append(m)
-    if os.getenv("GROQ_API_KEY"):
+    if os.getenv("GROQ_API_KEY") and config.GROQ_MODEL not in chain:
         chain.append(config.GROQ_MODEL)
-    if os.getenv("GEMINI_API_KEY"):
+    if os.getenv("GEMINI_API_KEY") and config.GEMINI_MODEL not in chain:
         chain.append(config.GEMINI_MODEL)
     return chain
 
@@ -46,4 +48,13 @@ def make_llm(model: str) -> LLM:
         if "qwen3" in model and os.getenv("QWEN_THINKING", "false").lower() != "true":
             kwargs["reasoning_effort"] = "none"
         return LLM(model=model, **kwargs)
-    return LLM(model=model, temperature=0.1, max_tokens=4096)
+    kwargs = {"temperature": 0.1, "max_tokens": 4096}
+    # gpt-oss also "thinks" before answering; keep it short so cloud runs stay fast.
+    if "gpt-oss" in model:
+        kwargs["reasoning_effort"] = os.getenv("GPT_OSS_REASONING", "low")
+    if model.startswith("groq/"):
+        # Groq speaks the OpenAI API, so use CrewAI's native OpenAI client against Groq's
+        # endpoint (the LiteLLM route sends a cache field that Groq rejects).
+        return LLM(model=model.removeprefix("groq/"), provider="openai", base_url=GROQ_BASE_URL,
+                   api_key=os.getenv("GROQ_API_KEY"), **kwargs)
+    return LLM(model=model, **kwargs)

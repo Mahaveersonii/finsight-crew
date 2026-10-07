@@ -122,6 +122,10 @@ def widget_jsx() -> str:
             tone = "quiet" if style == "box" else "ink"
             g.append(f"<text data-claude-text-id='{anchor}-l{i + 1}' x='{x + 16}' y='{y + 40 + 16 * i}' fontSize='11.5' "
                      f"fill={{{tone}}}>{ln}</text>")
+        if anchor in NEW:
+            g.append(f"<rect x='{x + w - 46}' y='{y + 10}' width='36' height='16' rx='4' fill={{accent}} fillOpacity='0.15' stroke={{accent}}/>"
+                     f"<text data-claude-text-id='{anchor}-new' x='{x + w - 28}' y='{y + 22}' fontSize='10' fontWeight='600' "
+                     f"textAnchor='middle' fill={{accent}}>NEW</text>")
         parts.append("".join(g) + "</g>")
     for tid, x, y, t, anchor in LABELS:
         parts.append(f"<text data-claude-text-id='{tid}' x='{x}' y='{y}' fontSize='11.5' textAnchor='{anchor}' fill={{quiet}}>{t}</text>")

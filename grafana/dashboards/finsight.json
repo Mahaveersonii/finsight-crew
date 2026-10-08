@@ -152,7 +152,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "#73BF69"
@@ -168,7 +168,8 @@
         },
         "colorMode": "value",
         "graphMode": "area"
-      }
+      },
+      "description": "Portfolio value against the first snapshot (the starting cash), in percent with 2 decimals."
     },
     {
       "id": 17,

@@ -52,6 +52,9 @@ def make_llm(model: str) -> LLM:
     # gpt-oss also "thinks" before answering; keep it short so cloud runs stay fast.
     if "gpt-oss" in model:
         kwargs["reasoning_effort"] = os.getenv("GPT_OSS_REASONING", "low")
+    if model.startswith("groq/") and "qwen" in model:
+        # Groq's free plan caps Qwen at 1,000 output tokens a minute; a larger request is refused outright.
+        kwargs["max_tokens"] = int(os.getenv("GROQ_QWEN_MAX_TOKENS", "900"))
     if model.startswith("groq/"):
         # Groq speaks the OpenAI API, so use CrewAI's native OpenAI client against Groq's
         # endpoint (the LiteLLM route sends a cache field that Groq rejects).

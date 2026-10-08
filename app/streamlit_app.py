@@ -419,7 +419,8 @@ with tab_scan:
             {"label": "Score ≥ 70 (BUY zone)", "value": len(buy_ready), "sub": ", ".join(buy_ready) or "none today",
              "tone": "fs-up" if buy_ready else ""},
             {"label": "In an uptrend", "value": int((scan["Trend"] == "uptrend").sum())},
-            {"label": "Best 12-month", "value": f"{scan.loc[scan['12M %'].idxmax(), 'Stock']} {pct(scan['12M %'].max(), 0)}"},
+            {"label": "Best 12-month", "value": f"{scan.loc[scan['12M %'].idxmax(), 'Stock']} {pct(scan['12M %'].max(), 0)}"
+             if scan["12M %"].notna().any() else "–"},
         ]))
     st.dataframe(scan, hide_index=True, width="stretch", column_config={
         "Price": st.column_config.NumberColumn(format=f"{CUR}%.2f"),

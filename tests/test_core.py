@@ -410,3 +410,25 @@ def test_lazy_prices_similarity_and_explanation_guardrail():
                                     {"risk": "invented", "citations": ["[AAPL 10-K FY2025 · Risk Factors · new ¶999]"]}]})
     ok, out = _check(raw, {real})
     assert ok and out["concern"] == "High" and [r["risk"] for r in out["new_risks"]] == ["online safety"]
+
+
+
+def test_price_history_drops_blank_rows_before_the_open(monkeypatch, tmp_path):
+    import numpy as np
+    import pandas as pd
+    import yfinance as yf
+    from finsight.tools import market_data as md
+    idx = pd.to_datetime(["2026-10-05", "2026-10-06", "2026-10-07"])
+    raw = pd.DataFrame({"Open": [1.0, 2.0, np.nan], "High": [1.0, 2.0, np.nan], "Low": [1.0, 2.0, np.nan],
+                        "Close": [1.0, 2.0, np.nan], "Volume": [10, 20, 30]}, index=idx)
+
+    class FakeTicker:
+        def __init__(self, t):
+            pass
+
+        def history(self, **kw):
+            return raw.copy()
+    monkeypatch.setattr(yf, "Ticker", FakeTicker)
+    monkeypatch.setattr(md, "_cache_path", lambda name: tmp_path / name)
+    df = md.get_price_history("TEST", period="5d")
+    assert len(df) == 2 and df["Close"].iloc[-1] == 2.0

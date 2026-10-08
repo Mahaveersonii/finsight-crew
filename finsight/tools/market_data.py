@@ -42,6 +42,10 @@ def get_price_history(ticker: str, period: str = "2y", run_id=None) -> pd.DataFr
         import yfinance as yf
 
         df = yf.Ticker(ticker).history(period=period, auto_adjust=True)
+        if df is not None:
+            # Before the open Yahoo can add a row for today with volume but no prices; one blank
+            # last row would turn every indicator, the stop-loss and the share count into NaN.
+            df = df.dropna(subset=["Close"])
         if df is None or df.empty:
             raise ValueError("empty price history")
         df.index = df.index.tz_localize(None)

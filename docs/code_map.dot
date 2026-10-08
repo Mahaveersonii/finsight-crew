@@ -1,0 +1,123 @@
+digraph G {
+graph [rankdir=TB, newrank=true, splines=spline, nodesep=0.6, ranksep=1.5, fontname="Helvetica", fontsize=22, labelloc=t, label=<<b>FinSight Crew v2: every Python file and what flows between them</b><br/><font point-size="13">Arrows point from the file that calls to the file it uses. Dashed lines go to outside services. tests/test_core.py (41 checks) and docs/ scripts are not drawn.</font>>, pad=0.4, bgcolor="white"];
+node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, margin="0.15,0.08", penwidth=1.3];
+edge [fontname="Helvetica", fontsize=10, color="#7D8590", fontcolor="#2F3742", arrowsize=0.7, penwidth=1.1, decorate=true, labelfloat=false];
+subgraph cluster_0 { label=<<b>1. Entry points: you start these</b>>; fontsize=13; style="rounded,dashed"; color="#7A8BA6"; fontcolor="#7A8BA6"; margin=14;
+streamlit_app [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>app/streamlit_app.py</b><br/><font point-size="10" color="#3B4250">The trading-desk website, 7 tabs<br/>Run button starts an analysis</font>>];
+scheduler [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>finsight/scheduler.py</b><br/><font point-size="10" color="#3B4250">Autopilot: price checks every 15 min<br/>agents on all stocks after close</font>>];
+run_crew [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>scripts/run_crew.py</b><br/><font point-size="10" color="#3B4250">Analyse a stock from the terminal<br/>--dry-run = no trade</font>>];
+run_backtest [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>scripts/run_backtest.py</b><br/><font point-size="10" color="#3B4250">Replay 4 years of prices<br/>saves results to eval/</font>>];
+fetch_reports [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>scripts/fetch_annual_reports.py</b><br/><font point-size="10" color="#3B4250">Download the 6 Indian reports<br/>and verify each PDF</font>>];
+run_rag_eval [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>eval/run_rag_eval.py</b><br/><font point-size="10" color="#3B4250">Test report-search accuracy<br/>Hit@1/3/5 and MRR</font>>];
+reset_portfolio [fillcolor="#EEF2F7", color="#7A8BA6", label=<<b>scripts/reset_portfolio.py</b><br/><font point-size="10" color="#3B4250">Clean slate before a demo<br/>deletes trades and positions</font>>];
+}
+subgraph cluster_1 { label=<<b>2. Screen look</b>>; fontsize=13; style="rounded,dashed"; color="#9B7FD0"; fontcolor="#9B7FD0"; margin=14;
+ui [fillcolor="#F4EEFB", color="#9B7FD0", label=<<b>app/ui.py</b><br/><font point-size="10" color="#3B4250">Colours, fonts, chart theme<br/>header, tape, cards, gauge, diff view</font>>];
+}
+subgraph cluster_2 { label=<<b>3. Orchestration</b>>; fontsize=13; style="rounded,dashed"; color="#C98A2B"; fontcolor="#C98A2B"; margin=14;
+pipeline [fillcolor="#FDF3E3", color="#C98A2B", label=<<b>finsight/pipeline.py</b><br/><font point-size="10" color="#3B4250">Runs ONE analysis end to end<br/>data, crew, policy, risk, save</font>>];
+backtest [fillcolor="#FDF3E3", color="#C98A2B", label=<<b>finsight/backtest.py</b><br/><font point-size="10" color="#3B4250">Momentum rules on past prices<br/>no AI (avoids look-ahead bias)</font>>];
+}
+subgraph cluster_3 { label=<<b>4. Agents and AI</b>>; fontsize=13; style="rounded,dashed"; color="#6E62D0"; fontcolor="#6E62D0"; margin=14;
+crew [fillcolor="#EFEDFE", color="#6E62D0", label=<<b>finsight/crew.py</b><br/><font point-size="10" color="#3B4250">3 agents + their tasks, fact sheet<br/>guardrail checks the decision</font>>];
+crew_tools [fillcolor="#EFEDFE", color="#6E62D0", label=<<b>finsight/tools/crew_tools.py</b><br/><font point-size="10" color="#3B4250">10 tools the agents can call<br/>cached, logged, never crash</font>>];
+filing_changes [fillcolor="#EFEDFE", color="#6E62D0", label=<<b>finsight/filing_changes.py</b><br/><font point-size="10" color="#3B4250">Agent 4: this year's 10-K vs last<br/>new / edited / removed risks</font>>];
+llm [fillcolor="#EFEDFE", color="#6E62D0", label=<<b>finsight/llm.py</b><br/><font point-size="10" color="#3B4250">Picks the AI model<br/>gpt-oss-120b, 20b, Qwen fallback</font>>];
+}
+subgraph cluster_4 { label=<<b>5. Trading and time</b>>; fontsize=13; style="rounded,dashed"; color="#2F9C78"; fontcolor="#2F9C78"; margin=14;
+broker [fillcolor="#E5F5EF", color="#2F9C78", label=<<b>finsight/broker.py</b><br/><font point-size="10" color="#3B4250">Risk engine + paper broker<br/>size, fill or queue, stops, snapshots</font>>];
+market_clock [fillcolor="#E5F5EF", color="#2F9C78", label=<<b>finsight/market_clock.py</b><br/><font point-size="10" color="#3B4250">NYSE / NSE opening hours<br/>open now? next open?</font>>];
+}
+subgraph cluster_5 { label=<<b>6. Report library (RAG)</b>>; fontsize=13; style="rounded,dashed"; color="#5E9A2E"; fontcolor="#5E9A2E"; margin=14;
+rag [fillcolor="#E8F3E0", color="#5E9A2E", label=<<b>finsight/rag.py</b><br/><font point-size="10" color="#3B4250">Cuts reports into passages, vectors<br/>search + Ask the Report answers</font>>];
+pdf_reports [fillcolor="#E8F3E0", color="#5E9A2E", label=<<b>finsight/pdf_reports.py</b><br/><font point-size="10" color="#3B4250">Reads Indian PDFs<br/>keeps narrative pages, labels them</font>>];
+report_bot [fillcolor="#E8F3E0", color="#5E9A2E", label=<<b>finsight/report_bot.py</b><br/><font point-size="10" color="#3B4250">Downloads Indian reports politely<br/>checks robots.txt and FY2026</font>>];
+}
+subgraph cluster_6 { label=<<b>7. Data and valuation</b>>; fontsize=13; style="rounded,dashed"; color="#3A7BC8"; fontcolor="#3A7BC8"; margin=14;
+market_data [fillcolor="#E6F0FB", color="#3A7BC8", label=<<b>finsight/tools/market_data.py</b><br/><font point-size="10" color="#3B4250">Prices and company numbers<br/>Yahoo, SEC backup, saved copies</font>>];
+valuation [fillcolor="#E6F0FB", color="#3A7BC8", label=<<b>finsight/tools/valuation.py</b><br/><font point-size="10" color="#3B4250">All the maths: RSI, ATR, DCF<br/>reverse DCF, 0-100 quant score</font>>];
+}
+subgraph cluster_7 { label=<<b>8. Foundation: used by almost every file</b>>; fontsize=13; style="rounded,dashed"; color="#8A887F"; fontcolor="#8A887F"; margin=14;
+config [fillcolor="#F1F0EC", color="#8A887F", label=<<b>finsight/config.py</b><br/><font point-size="10" color="#3B4250">Reads .env: market, models<br/>database, risk rules</font>>];
+markets [fillcolor="#F1F0EC", color="#8A887F", label=<<b>finsight/markets.py</b><br/><font point-size="10" color="#3B4250">US vs India settings<br/>currency, rates, hours, stocks</font>>];
+db [fillcolor="#F1F0EC", color="#8A887F", label=<<b>finsight/db.py</b><br/><font point-size="10" color="#3B4250">The memory: 6 tables<br/>runs, signals, trades, positions, ...</font>>];
+}
+subgraph cluster_ext { label=<<b>Outside services</b>>; fontsize=13; style="rounded,dashed"; color="#B0B4BA"; fontcolor="#7D8590"; margin=14;
+yahoo [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>Yahoo Finance</b>>];
+sec [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>SEC EDGAR</b>>];
+groq [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>Groq cloud AI</b>>];
+ollama [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>Ollama on the Mac</b>>];
+chroma [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>ChromaDB (data/chroma)</b>>];
+postgres [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>PostgreSQL (Docker)</b>>];
+sites [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>Company websites</b>>];
+}
+browser [shape=box, style="rounded,dashed", color="#9AA0A8", fillcolor="white", fontsize=11, label=<<b>Your browser</b>>];
+{rank=same; browser; streamlit_app; scheduler; run_crew; run_backtest; fetch_reports; run_rag_eval; reset_portfolio;}
+{rank=same; ui; pipeline; backtest;}
+{rank=same; crew; crew_tools; filing_changes; llm;}
+{rank=same; broker; market_clock; rag;}
+{rank=same; market_data; valuation; pdf_reports; report_bot;}
+{rank=same; db; config; markets;}
+{rank=same; yahoo; sec; groq; ollama; chroma; postgres; sites;}
+streamlit_app -> pipeline [style=invis, weight=20];
+pipeline -> crew_tools [style=invis, weight=20];
+crew_tools -> market_clock [style=invis, weight=20];
+market_clock -> valuation [style=invis, weight=20];
+valuation -> config [style=invis, weight=20];
+config -> sec [style=invis, weight=20];
+streamlit_app -> pipeline [label=<Run button: analyse(stock)>];
+streamlit_app -> ui [label=<look + components>];
+streamlit_app -> broker [label=<portfolio, mark to market>];
+streamlit_app -> market_data [label=<prices for charts, tape>];
+streamlit_app -> valuation [label=<scores, DCF for the desk>];
+streamlit_app -> rag [label=<Ask the Report>];
+streamlit_app -> filing_changes [label=<What changed tab>];
+streamlit_app -> backtest [label=<Backtest lab tab>];
+streamlit_app -> market_clock [label=<open / closed badge>];
+scheduler -> pipeline [label=<daily agent run>];
+scheduler -> broker [label=<every 15 min: fills, stops, snapshot>];
+scheduler -> rag [label=<index reports at start>];
+scheduler -> filing_changes [label=<refresh 10-K comparisons>];
+scheduler -> market_clock [label=<is the market open?>];
+run_crew -> pipeline [label=<analyse from terminal>];
+run_backtest -> backtest [label=<run + save results>];
+fetch_reports -> report_bot [label=<download + verify>];
+run_rag_eval -> rag [label=<accuracy test questions>];
+reset_portfolio -> db [label=<delete trades, positions>];
+pipeline -> crew [label=<build + run the agents>];
+pipeline -> llm [label=<model chain, fallback>];
+pipeline -> crew_tools [label=<fetch data once (shared cache)>];
+pipeline -> broker [label=<plan_trade + execute>];
+pipeline -> rag [label=<index report if missing>];
+pipeline -> db [label=<save run + decision>];
+crew -> crew_tools [label=<agents call tools>];
+crew_tools -> market_data [label=<prices, fundamentals>];
+crew_tools -> valuation [label=<DCF, quant score>];
+crew_tools -> rag [label=<search_annual_report>];
+crew_tools -> filing_changes [label=<get_filing_changes>];
+crew_tools -> broker [label=<portfolio state, plan_position>];
+filing_changes -> rag [label=<10-K sections, vectors>];
+filing_changes -> llm [label=<model for agent 4>];
+filing_changes -> crew [label=<JSON + citation helpers>];
+rag -> pdf_reports [label=<useful PDF pages>];
+rag -> report_bot [label=<fetch a missing PDF>];
+rag -> llm [label=<model for answers>];
+broker -> market_data [label=<live prices, ATR>];
+broker -> valuation [label=<ATR for the stop-loss>];
+broker -> market_clock [label=<fill now or queue?>];
+broker -> db [label=<trades, positions, snapshots>];
+backtest -> market_data [label=<4 years of prices>];
+config -> markets [label=<per-market settings>];
+db -> config [label=<database address>];
+browser -> streamlit_app [label=<localhost:8502 / 8503>, style=dashed, color="#A8AEB6"];
+market_data -> yahoo [label=<prices, fundamentals>, style=dashed, color="#A8AEB6"];
+market_data -> sec [label=<backup numbers>, style=dashed, color="#A8AEB6"];
+rag -> sec [label=<10-K text>, style=dashed, color="#A8AEB6"];
+filing_changes -> sec [label=<last two 10-Ks>, style=dashed, color="#A8AEB6"];
+rag -> chroma [label=<store + search passages>, style=dashed, color="#A8AEB6"];
+rag -> ollama [label=<text to vectors>, style=dashed, color="#A8AEB6"];
+llm -> groq [label=<agents' thinking>, style=dashed, color="#A8AEB6"];
+llm -> ollama [label=<offline backup>, style=dashed, color="#A8AEB6"];
+report_bot -> sites [label=<annual-report PDFs>, style=dashed, color="#A8AEB6"];
+db -> postgres [label=<6 tables (SQLite backup)>, style=dashed, color="#A8AEB6"];
+}

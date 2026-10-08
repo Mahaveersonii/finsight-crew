@@ -55,7 +55,7 @@ The rule behind most changes: **the AI makes judgements; code supplies the facts
 
 ![FinSight Crew v2 architecture: data sources, report library, three AI agents on Groq, guardrails, risk officer, paper broker, storage and screens, for the US and India markets](docs/architecture.svg)
 
-A PNG copy for slides is in `docs/architecture.png`. A file-level map of every Python file, what it does and what flows between them is in [`docs/code_map.png`](docs/code_map.png) (regenerate with `python docs/make_code_map.py`, needs Graphviz).
+A PNG copy for slides is in `docs/architecture.png`. A file-level map of every Python file, what it does and what flows between them is in [`docs/code_map.png`](docs/code_map.png) (regenerate with `python docs/make_code_map.py`).
 
 The same diagram is used in the team guide. Regenerate it after changing the layout with `python docs/make_architecture_diagram.py`.
 

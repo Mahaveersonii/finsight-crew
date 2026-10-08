@@ -6,8 +6,8 @@ The same layout is used for the diagram in the team guide, so both always match.
 """
 from pathlib import Path
 
-W, H = 900, 860
-TITLE = "Every decision: data in, three AI agents on Groq, code checks the facts, then the risk officer"
+W, H = 900, 964
+TITLE = "Every decision: data in, four AI agents on Groq, code checks the facts, then the risk officer"
 SUBTITLE = "FinSight Crew v2 - the same pipeline runs for the US and India markets - NEW marks what changed in v2"
 
 # (anchor, x, y, w, h, style, name, lines)   style: box | accent | soft
@@ -21,36 +21,38 @@ BOXES = [
     ("agent1", 40, 280, 190, 88, "box", "1. Data Extractor", ["price, trend and", "company numbers", "writes the data brief"]),
     ("agent2", 258, 280, 190, 88, "box", "2. Financial Analyst", ["values the share (DCF)", "quotes the annual report", "verdict and score 0-100"]),
     ("agent3", 476, 280, 190, 88, "box", "3. Portfolio Manager", ["gets an exact fact sheet", "decides BUY, HOLD or SELL", "hands in a JSON decision"]),
-    ("scheduler", 40, 468, 190, 88, "box", "Schedulers (US, India)", ["every 15 min: prices, stops", "after the close: agents", "run on the Mac"]),
-    ("risk", 258, 468, 190, 88, "accent", "Risk officer (code)", ["score under 70 means HOLD", "sets stop-loss and size", "10% stock, 30% sector caps"]),
-    ("guardrails", 476, 468, 190, 88, "soft", "Guardrails (code)", ["format and tool use checked", "citations matched or fixed", "numbers fact-checked"]),
-    ("broker", 258, 596, 190, 72, "box", "Paper broker (code)", ["fills while market is open", "queues orders when closed"]),
-    ("database", 476, 596, 190, 72, "box", "PostgreSQL (Docker)", ["one database per market", "decisions, trades, audit log"]),
-    ("where", 700, 596, 176, 188, "soft", "Where it runs", ["Mac: both apps, the", "schedulers and Ollama", "Docker: PostgreSQL and", "Grafana", "Groq cloud: AI models", "Internet: Yahoo, SEC,", "company websites", "All on free plans"]),
-    ("you", 40, 712, 190, 72, "box", "You", ["pick a stock, press Run", "or ask the report"]),
-    ("streamlit", 258, 712, 190, 72, "box", "Streamlit app", ["trading desk, live prices", "US :8502 - India :8503"]),
-    ("grafana", 476, 712, 190, 72, "box", "Grafana (Docker)", ["Market dropdown: US / India", "fund and agent health"]),
+    ("filings", 40, 392, 408, 80, "box", "4. Filing Change Analyst", ["compares this year's 10-K with last year's (US)", "new, edited, removed paragraphs, explained with citations"]),
+    ("scheduler", 40, 572, 190, 88, "box", "Schedulers (US, India)", ["every 15 min: prices, stops", "after the close: agents", "run on the Mac"]),
+    ("risk", 258, 572, 190, 88, "accent", "Risk officer (code)", ["score under 70 means HOLD", "sets stop-loss and size", "10% stock, 30% sector caps"]),
+    ("guardrails", 476, 572, 190, 88, "soft", "Guardrails (code)", ["format and tool use checked", "citations matched or fixed", "numbers fact-checked"]),
+    ("broker", 258, 700, 190, 72, "box", "Paper broker (code)", ["fills while market is open", "queues orders when closed"]),
+    ("database", 476, 700, 190, 72, "box", "PostgreSQL (Docker)", ["one database per market", "decisions, trades, audit log"]),
+    ("where", 700, 700, 176, 188, "soft", "Where it runs", ["Mac: both apps, the", "schedulers and Ollama", "Docker: PostgreSQL and", "Grafana", "Groq cloud: AI models", "Internet: Yahoo, SEC,", "company websites", "All on free plans"]),
+    ("you", 40, 816, 190, 72, "box", "You", ["pick a stock, press Run", "or ask the report"]),
+    ("streamlit", 258, 816, 190, 72, "box", "Streamlit app", ["trading desk, live prices", "US :8502 - India :8503"]),
+    ("grafana", 476, 816, 190, 72, "box", "Grafana (Docker)", ["Market dropdown: US / India", "fund and agent health"]),
 ]
-NEW = {"ollama", "groq", "agent3", "guardrails", "streamlit"}
-CONTAINER = ("ai-team", 24, 264, 656, 164, "The AI team (CrewAI) - runs on Groq and switches model if one fails", 412)
+NEW = {"ollama", "groq", "agent3", "filings", "guardrails", "streamlit"}
+CONTAINER = ("ai-team", 24, 264, 656, 268, "The AI team (CrewAI) - four agents on Groq; switches model if one fails", 516)
 # (path, has arrowhead)
 CONNECTORS = [
     "M124 148V278", "M344 148V174", "M564 148V174", "M700 204H666", "M353 232V278",
-    "M230 324H256", "M448 324H474", "M700 324H682", "M620 368V466", "M520 468V370",
-    "M476 512H450", "M135 468V430", "M230 512H256", "M353 556V594", "M448 632H474",
-    "M620 668V710", "M520 668V690H353V710", "M230 748H256",
+    "M230 324H256", "M448 324H474", "M700 324H682", "M353 392V370", "M620 368V570", "M520 572V370",
+    "M476 616H450", "M135 572V534", "M230 616H256", "M353 660V698", "M448 736H474",
+    "M620 772V814", "M520 772V794H353V814", "M230 852H256",
 ]
 # (id, x, y, text, anchor)
 LABELS = [
     ("label-facts", 132, 214, "facts", "start"),
     ("label-search", 361, 256, "report search", "start"),
-    ("label-decision", 612, 452, "decision", "end"),
-    ("label-retry", 512, 452, "retry if wrong", "end"),
-    ("label-approved", 463, 504, "ok", "middle"),
-    ("label-starts", 143, 452, "starts runs", "start"),
+    ("label-changes", 361, 386, "what changed", "start"),
+    ("label-decision", 612, 556, "decision", "end"),
+    ("label-retry", 512, 556, "retry if wrong", "end"),
+    ("label-approved", 463, 608, "ok", "middle"),
+    ("label-starts", 143, 556, "starts runs", "start"),
 ]
-FOOT = ["v2: the AI moved from the Mac to Groq's cloud, code hands the agents exact facts and repairs citations,",
-        "and the screens became a live trading desk. Each market has its own database, scheduler and app."]
+FOOT = ["v2: the AI moved from the Mac to Groq's cloud, a fourth agent reads what changed in the annual report,",
+        "code hands the agents exact facts and repairs citations, and the screens became a live trading desk."]
 
 LIGHT = {"ink": "#1f2328", "quiet": "#57606a", "edge": "#8c959f", "accent": "#0969da",
          "accent_fill": "#ddf4ff", "soft": "#9a6700", "soft_fill": "#fff8c5", "tint": "#f6f8fa", "bg": "#ffffff"}

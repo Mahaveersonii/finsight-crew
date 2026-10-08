@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 860" width="900" height="860" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" role="img" aria-label="Every decision: data in, three AI agents on Groq, code checks the facts, then the risk officer">
-<rect width="900" height="860" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 964" width="900" height="964" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" role="img" aria-label="Every decision: data in, four AI agents on Groq, code checks the facts, then the risk officer">
+<rect width="900" height="964" fill="#ffffff"/>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8c959f"/></marker></defs>
-<text x="24" y="32" font-size="15" font-weight="600" fill="#1f2328">Every decision: data in, three AI agents on Groq, code checks the facts, then the risk officer</text>
+<text x="24" y="32" font-size="15" font-weight="600" fill="#1f2328">Every decision: data in, four AI agents on Groq, code checks the facts, then the risk officer</text>
 <text x="24" y="52" font-size="11.5" fill="#57606a">FinSight Crew v2 - the same pipeline runs for the US and India markets - NEW marks what changed in v2</text>
-<rect x="24" y="264" width="656" height="164" rx="8" fill="#f6f8fa" stroke="#8c959f" stroke-width="1.25"/>
-<text x="40" y="412" font-weight="600" fill="#1f2328">The AI team (CrewAI) - runs on Groq and switches model if one fails</text>
+<rect x="24" y="264" width="656" height="268" rx="8" fill="#f6f8fa" stroke="#8c959f" stroke-width="1.25"/>
+<text x="40" y="516" font-weight="600" fill="#1f2328">The AI team (CrewAI) - four agents on Groq; switches model if one fails</text>
 <path d="M124 148V278" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
 <path d="M344 148V174" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
 <path d="M564 148V174" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
@@ -13,16 +13,17 @@
 <path d="M230 324H256" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
 <path d="M448 324H474" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
 <path d="M700 324H682" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M620 368V466" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M520 468V370" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M476 512H450" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M135 468V430" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M230 512H256" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M353 556V594" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M448 632H474" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M620 668V710" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M520 668V690H353V710" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
-<path d="M230 748H256" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M353 392V370" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M620 368V570" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M520 572V370" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M476 616H450" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M135 572V534" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M230 616H256" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M353 660V698" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M448 736H474" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M620 772V814" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M520 772V794H353V814" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
+<path d="M230 852H256" fill="none" stroke="#8c959f" stroke-width="1.25" marker-end="url(#arrow)"/>
 <rect x="24" y="76" width="200" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
 <text x="40" y="100" font-weight="600" fill="#1f2328">Yahoo Finance</text>
 <text x="40" y="116" font-size="11.5" fill="#57606a">prices refreshed every minute</text>
@@ -61,62 +62,68 @@
 <text x="492" y="320" font-size="11.5" fill="#57606a">gets an exact fact sheet</text>
 <text x="492" y="336" font-size="11.5" fill="#57606a">decides BUY, HOLD or SELL</text>
 <text x="492" y="352" font-size="11.5" fill="#57606a">hands in a JSON decision</text>
-<rect x="40" y="468" width="190" height="88" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
-<text x="56" y="492" font-weight="600" fill="#1f2328">Schedulers (US, India)</text>
-<text x="56" y="508" font-size="11.5" fill="#57606a">every 15 min: prices, stops</text>
-<text x="56" y="524" font-size="11.5" fill="#57606a">after the close: agents</text>
-<text x="56" y="540" font-size="11.5" fill="#57606a">run on the Mac</text>
-<rect x="258" y="468" width="190" height="88" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
-<text x="274" y="492" font-weight="600" fill="#1f2328">Risk officer (code)</text>
-<text x="274" y="508" font-size="11.5" fill="#1f2328">score under 70 means HOLD</text>
-<text x="274" y="524" font-size="11.5" fill="#1f2328">sets stop-loss and size</text>
-<text x="274" y="540" font-size="11.5" fill="#1f2328">10% stock, 30% sector caps</text>
-<rect x="476" y="468" width="190" height="88" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
-<text x="492" y="492" font-weight="600" fill="#1f2328">Guardrails (code)</text>
-<text x="492" y="508" font-size="11.5" fill="#1f2328">format and tool use checked</text>
-<text x="492" y="524" font-size="11.5" fill="#1f2328">citations matched or fixed</text>
-<text x="492" y="540" font-size="11.5" fill="#1f2328">numbers fact-checked</text>
-<rect x="258" y="596" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
-<text x="274" y="620" font-weight="600" fill="#1f2328">Paper broker (code)</text>
-<text x="274" y="636" font-size="11.5" fill="#57606a">fills while market is open</text>
-<text x="274" y="652" font-size="11.5" fill="#57606a">queues orders when closed</text>
-<rect x="476" y="596" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
-<text x="492" y="620" font-weight="600" fill="#1f2328">PostgreSQL (Docker)</text>
-<text x="492" y="636" font-size="11.5" fill="#57606a">one database per market</text>
-<text x="492" y="652" font-size="11.5" fill="#57606a">decisions, trades, audit log</text>
-<rect x="700" y="596" width="176" height="188" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
-<text x="716" y="620" font-weight="600" fill="#1f2328">Where it runs</text>
-<text x="716" y="636" font-size="11.5" fill="#1f2328">Mac: both apps, the</text>
-<text x="716" y="652" font-size="11.5" fill="#1f2328">schedulers and Ollama</text>
-<text x="716" y="668" font-size="11.5" fill="#1f2328">Docker: PostgreSQL and</text>
-<text x="716" y="684" font-size="11.5" fill="#1f2328">Grafana</text>
-<text x="716" y="700" font-size="11.5" fill="#1f2328">Groq cloud: AI models</text>
-<text x="716" y="716" font-size="11.5" fill="#1f2328">Internet: Yahoo, SEC,</text>
-<text x="716" y="732" font-size="11.5" fill="#1f2328">company websites</text>
-<text x="716" y="748" font-size="11.5" fill="#1f2328">All on free plans</text>
-<rect x="40" y="712" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
-<text x="56" y="736" font-weight="600" fill="#1f2328">You</text>
-<text x="56" y="752" font-size="11.5" fill="#57606a">pick a stock, press Run</text>
-<text x="56" y="768" font-size="11.5" fill="#57606a">or ask the report</text>
-<rect x="258" y="712" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
-<text x="274" y="736" font-weight="600" fill="#1f2328">Streamlit app</text>
-<text x="274" y="752" font-size="11.5" fill="#57606a">trading desk, live prices</text>
-<text x="274" y="768" font-size="11.5" fill="#57606a">US :8502 - India :8503</text>
-<rect x="476" y="712" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
-<text x="492" y="736" font-weight="600" fill="#1f2328">Grafana (Docker)</text>
-<text x="492" y="752" font-size="11.5" fill="#57606a">Market dropdown: US / India</text>
-<text x="492" y="768" font-size="11.5" fill="#57606a">fund and agent health</text>
+<rect x="40" y="392" width="408" height="80" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="56" y="416" font-weight="600" fill="#1f2328">4. Filing Change Analyst</text>
+<text x="56" y="432" font-size="11.5" fill="#57606a">compares this year's 10-K with last year's (US)</text>
+<text x="56" y="448" font-size="11.5" fill="#57606a">new, edited, removed paragraphs, explained with citations</text>
+<rect x="40" y="572" width="190" height="88" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="56" y="596" font-weight="600" fill="#1f2328">Schedulers (US, India)</text>
+<text x="56" y="612" font-size="11.5" fill="#57606a">every 15 min: prices, stops</text>
+<text x="56" y="628" font-size="11.5" fill="#57606a">after the close: agents</text>
+<text x="56" y="644" font-size="11.5" fill="#57606a">run on the Mac</text>
+<rect x="258" y="572" width="190" height="88" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="2"/>
+<text x="274" y="596" font-weight="600" fill="#1f2328">Risk officer (code)</text>
+<text x="274" y="612" font-size="11.5" fill="#1f2328">score under 70 means HOLD</text>
+<text x="274" y="628" font-size="11.5" fill="#1f2328">sets stop-loss and size</text>
+<text x="274" y="644" font-size="11.5" fill="#1f2328">10% stock, 30% sector caps</text>
+<rect x="476" y="572" width="190" height="88" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+<text x="492" y="596" font-weight="600" fill="#1f2328">Guardrails (code)</text>
+<text x="492" y="612" font-size="11.5" fill="#1f2328">format and tool use checked</text>
+<text x="492" y="628" font-size="11.5" fill="#1f2328">citations matched or fixed</text>
+<text x="492" y="644" font-size="11.5" fill="#1f2328">numbers fact-checked</text>
+<rect x="258" y="700" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="274" y="724" font-weight="600" fill="#1f2328">Paper broker (code)</text>
+<text x="274" y="740" font-size="11.5" fill="#57606a">fills while market is open</text>
+<text x="274" y="756" font-size="11.5" fill="#57606a">queues orders when closed</text>
+<rect x="476" y="700" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="492" y="724" font-weight="600" fill="#1f2328">PostgreSQL (Docker)</text>
+<text x="492" y="740" font-size="11.5" fill="#57606a">one database per market</text>
+<text x="492" y="756" font-size="11.5" fill="#57606a">decisions, trades, audit log</text>
+<rect x="700" y="700" width="176" height="188" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="2"/>
+<text x="716" y="724" font-weight="600" fill="#1f2328">Where it runs</text>
+<text x="716" y="740" font-size="11.5" fill="#1f2328">Mac: both apps, the</text>
+<text x="716" y="756" font-size="11.5" fill="#1f2328">schedulers and Ollama</text>
+<text x="716" y="772" font-size="11.5" fill="#1f2328">Docker: PostgreSQL and</text>
+<text x="716" y="788" font-size="11.5" fill="#1f2328">Grafana</text>
+<text x="716" y="804" font-size="11.5" fill="#1f2328">Groq cloud: AI models</text>
+<text x="716" y="820" font-size="11.5" fill="#1f2328">Internet: Yahoo, SEC,</text>
+<text x="716" y="836" font-size="11.5" fill="#1f2328">company websites</text>
+<text x="716" y="852" font-size="11.5" fill="#1f2328">All on free plans</text>
+<rect x="40" y="816" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="56" y="840" font-weight="600" fill="#1f2328">You</text>
+<text x="56" y="856" font-size="11.5" fill="#57606a">pick a stock, press Run</text>
+<text x="56" y="872" font-size="11.5" fill="#57606a">or ask the report</text>
+<rect x="258" y="816" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="274" y="840" font-weight="600" fill="#1f2328">Streamlit app</text>
+<text x="274" y="856" font-size="11.5" fill="#57606a">trading desk, live prices</text>
+<text x="274" y="872" font-size="11.5" fill="#57606a">US :8502 - India :8503</text>
+<rect x="476" y="816" width="190" height="72" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.25"/>
+<text x="492" y="840" font-weight="600" fill="#1f2328">Grafana (Docker)</text>
+<text x="492" y="856" font-size="11.5" fill="#57606a">Market dropdown: US / India</text>
+<text x="492" y="872" font-size="11.5" fill="#57606a">fund and agent health</text>
 <rect x="830" y="186" width="36" height="16" rx="4" fill="#0969da"/><text x="848" y="198" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
 <rect x="830" y="290" width="36" height="16" rx="4" fill="#0969da"/><text x="848" y="302" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
 <rect x="620" y="290" width="36" height="16" rx="4" fill="#0969da"/><text x="638" y="302" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
-<rect x="620" y="478" width="36" height="16" rx="4" fill="#0969da"/><text x="638" y="490" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
-<rect x="402" y="722" width="36" height="16" rx="4" fill="#0969da"/><text x="420" y="734" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
+<rect x="402" y="402" width="36" height="16" rx="4" fill="#0969da"/><text x="420" y="414" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
+<rect x="620" y="582" width="36" height="16" rx="4" fill="#0969da"/><text x="638" y="594" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
+<rect x="402" y="826" width="36" height="16" rx="4" fill="#0969da"/><text x="420" y="838" font-size="10" font-weight="600" text-anchor="middle" fill="#ffffff">NEW</text>
 <text x="132" y="214" font-size="11.5" text-anchor="start" fill="#57606a">facts</text>
 <text x="361" y="256" font-size="11.5" text-anchor="start" fill="#57606a">report search</text>
-<text x="612" y="452" font-size="11.5" text-anchor="end" fill="#57606a">decision</text>
-<text x="512" y="452" font-size="11.5" text-anchor="end" fill="#57606a">retry if wrong</text>
-<text x="463" y="504" font-size="11.5" text-anchor="middle" fill="#57606a">ok</text>
-<text x="143" y="452" font-size="11.5" text-anchor="start" fill="#57606a">starts runs</text>
-<text x="24" y="820" font-size="11.5" fill="#57606a">v2: the AI moved from the Mac to Groq's cloud, code hands the agents exact facts and repairs citations,</text>
-<text x="24" y="836" font-size="11.5" fill="#57606a">and the screens became a live trading desk. Each market has its own database, scheduler and app.</text>
+<text x="361" y="386" font-size="11.5" text-anchor="start" fill="#57606a">what changed</text>
+<text x="612" y="556" font-size="11.5" text-anchor="end" fill="#57606a">decision</text>
+<text x="512" y="556" font-size="11.5" text-anchor="end" fill="#57606a">retry if wrong</text>
+<text x="463" y="608" font-size="11.5" text-anchor="middle" fill="#57606a">ok</text>
+<text x="143" y="556" font-size="11.5" text-anchor="start" fill="#57606a">starts runs</text>
+<text x="24" y="924" font-size="11.5" fill="#57606a">v2: the AI moved from the Mac to Groq's cloud, a fourth agent reads what changed in the annual report,</text>
+<text x="24" y="940" font-size="11.5" fill="#57606a">code hands the agents exact facts and repairs citations, and the screens became a live trading desk.</text>
 </svg>

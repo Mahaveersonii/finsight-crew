@@ -1,680 +1,973 @@
 {
- "uid": "finsight",
- "title": "FinSight Crew \u2014 Portfolio & Agent Ops",
- "timezone": "browser",
- "refresh": "30s",
- "time": {
-  "from": "now-24h",
-  "to": "now"
- },
- "schemaVersion": 39,
- "version": 1,
- "panels": [
-  {
-   "id": 1,
-   "type": "stat",
-   "title": "Portfolio equity \u00b7 ${market}",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 0,
-    "y": 0,
-    "w": 6,
-    "h": 4
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "time_series",
-     "rawSql": "select ts as time, equity from snapshots order by ts"
-    }
-   ],
-   "fieldConfig": {
-    "defaults": {
-     "unit": "short",
-     "decimals": 0,
-     "color": {
-      "mode": "fixed",
-      "fixedColor": "#5794F2"
-     }
-    },
-    "overrides": []
-   },
-   "options": {
-    "reduceOptions": {
-     "calcs": [
-      "lastNotNull"
-     ]
-    },
-    "colorMode": "value",
-    "graphMode": "area"
-   }
+  "uid": "finsight",
+  "title": "FinSight Crew — Portfolio & Agent Ops",
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
   },
-  {
-   "id": 2,
-   "type": "stat",
-   "title": "Return since inception",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 6,
-    "y": 0,
-    "w": 6,
-    "h": 4
-   },
-   "targets": [
+  "schemaVersion": 39,
+  "version": 2,
+  "panels": [
     {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "time_series",
-     "rawSql": "select ts as time, (equity / first_value(equity) over (order by ts) - 1) * 100 as return_pct from snapshots order by ts"
-    }
-   ],
-   "fieldConfig": {
-    "defaults": {
-     "unit": "percent",
-     "decimals": 1,
-     "color": {
-      "mode": "fixed",
-      "fixedColor": "#73BF69"
-     }
-    },
-    "overrides": []
-   },
-   "options": {
-    "reduceOptions": {
-     "calcs": [
-      "lastNotNull"
-     ]
-    },
-    "colorMode": "value",
-    "graphMode": "area"
-   }
-  },
-  {
-   "id": 3,
-   "type": "stat",
-   "title": "Open positions",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 12,
-    "y": 0,
-    "w": 4,
-    "h": 4
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select count(*) as positions from positions"
-    }
-   ],
-   "fieldConfig": {
-    "defaults": {
-     "unit": "none",
-     "decimals": 0,
-     "color": {
-      "mode": "fixed",
-      "fixedColor": "#73BF69"
-     }
-    },
-    "overrides": []
-   },
-   "options": {
-    "reduceOptions": {
-     "calcs": [
-      "lastNotNull"
-     ]
-    },
-    "colorMode": "value",
-    "graphMode": "area"
-   }
-  },
-  {
-   "id": 4,
-   "type": "stat",
-   "title": "Crew success rate",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 16,
-    "y": 0,
-    "w": 4,
-    "h": 4
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select coalesce(100.0*avg(case when status='success' then 1 else 0 end),0) as success from runs where status<>'running'"
-    }
-   ],
-   "fieldConfig": {
-    "defaults": {
-     "unit": "percent",
-     "decimals": 1,
-     "color": {
-      "mode": "fixed",
-      "fixedColor": "#73BF69"
-     }
-    },
-    "overrides": []
-   },
-   "options": {
-    "reduceOptions": {
-     "calcs": [
-      "lastNotNull"
-     ]
-    },
-    "colorMode": "value",
-    "graphMode": "area"
-   }
-  },
-  {
-   "id": 5,
-   "type": "stat",
-   "title": "Recoveries (fallbacks, retries, overrides)",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 20,
-    "y": 0,
-    "w": 4,
-    "h": 4
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select count(*) as recoveries from events where kind in ('llm_fallback','data_fallback','guardrail_retry','risk_override','risk_veto','auto_exit')"
-    }
-   ],
-   "fieldConfig": {
-    "defaults": {
-     "unit": "none",
-     "decimals": 0,
-     "color": {
-      "mode": "fixed",
-      "fixedColor": "#73BF69"
-     }
-    },
-    "overrides": []
-   },
-   "options": {
-    "reduceOptions": {
-     "calcs": [
-      "lastNotNull"
-     ]
-    },
-    "colorMode": "value",
-    "graphMode": "area"
-   }
-  },
-  {
-   "id": 6,
-   "type": "timeseries",
-   "title": "Portfolio vs benchmark (growth of 100) \u00b7 ${market}",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 0,
-    "y": 4,
-    "w": 14,
-    "h": 9
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "time_series",
-     "rawSql": "select ts as time, equity / first_value(equity) over (order by ts) * 100 as \"Portfolio\", benchmark / first_value(benchmark) over (order by ts) * 100 as \"Benchmark (SPY / NIFTY 50)\" from snapshots where benchmark is not null order by ts"
-    }
-   ],
-   "description": "Growth of 100 since the first snapshot. Snapshots are taken every 15 minutes by the scheduler; outside US market hours prices do not move, so both lines stay flat.",
-   "fieldConfig": {
-    "defaults": {
-     "unit": "none",
-     "decimals": 2,
-     "custom": {
-      "showPoints": "always",
-      "pointSize": 5,
-      "lineWidth": 2,
-      "spanNulls": true,
-      "axisSoftMin": 99,
-      "axisSoftMax": 101
-     }
-    },
-    "overrides": [
-     {
-      "matcher": {
-       "id": "byName",
-       "options": "Benchmark (SPY / NIFTY 50)"
+      "id": 1,
+      "type": "stat",
+      "title": "Portfolio value · ${market}",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
       },
-      "properties": [
-       {
-        "id": "custom.lineStyle",
-        "value": {
-         "fill": "dash",
-         "dash": [
-          10,
-          10
-         ]
+      "description": "Cash plus the market value of every stock held, from the latest 15-minute snapshot.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, equity as \"Portfolio value\" from snapshots order by ts"
         }
-       }
-      ]
-     }
-    ]
-   },
-   "options": {
-    "legend": {
-     "displayMode": "list",
-     "placement": "bottom",
-     "calcs": [
-      "last"
-     ]
-    },
-    "tooltip": {
-     "mode": "multi"
-    }
-   }
-  },
-  {
-   "id": 7,
-   "type": "piechart",
-   "title": "Allocation (positions + cash)",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 14,
-    "y": 4,
-    "w": 5,
-    "h": 9
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select ticker as metric, shares*last_price as value from positions union all (select 'Cash' as metric, cash as value from snapshots order by ts desc limit 1)"
-    }
-   ],
-   "options": {
-    "reduceOptions": {
-     "values": true,
-     "calcs": []
-    },
-    "pieType": "donut",
-    "legend": {
-     "displayMode": "list",
-     "placement": "right"
-    }
-   }
-  },
-  {
-   "id": 8,
-   "type": "piechart",
-   "title": "Signals by action",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 19,
-    "y": 4,
-    "w": 5,
-    "h": 9
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select action as metric, count(*) as value from signals group by action"
-    }
-   ],
-   "options": {
-    "reduceOptions": {
-     "values": true,
-     "calcs": []
-    },
-    "pieType": "donut",
-    "legend": {
-     "displayMode": "list",
-     "placement": "right"
-    }
-   }
-  },
-  {
-   "id": 9,
-   "type": "barchart",
-   "title": "Tool calls (bars) & avg latency ms (right axis)",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 0,
-    "y": 13,
-    "w": 12,
-    "h": 8
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select name as tool, count(*) as calls, round(avg(duration_ms)::numeric,0) as avg_ms from events where kind='tool_call' group by name order by calls desc"
-    }
-   ],
-   "fieldConfig": {
-    "defaults": {},
-    "overrides": [
-     {
-      "matcher": {
-       "id": "byName",
-       "options": "avg_ms"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "locale",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#5794F2"
+          }
+        },
+        "overrides": []
       },
-      "properties": [
-       {
-        "id": "custom.axisPlacement",
-        "value": "right"
-       },
-       {
-        "id": "unit",
-        "value": "ms"
-       }
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "Profit / loss since start",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "description": "Portfolio value minus the value at the first snapshot (the starting cash).",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, equity - first_value(equity) over (order by ts) as \"Profit / loss\" from snapshots order by ts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "locale",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Return %",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 11,
+        "y": 0,
+        "w": 3,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, (equity / first_value(equity) over (order by ts) - 1) * 100 as return_pct from snapshots order by ts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73BF69"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "Cash",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 14,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, cash as \"Cash\" from snapshots order by ts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "locale",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#8AB8FF"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "Invested in stocks",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "description": "",
+      "gridPos": {
+        "x": 19,
+        "y": 0,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, positions_value as \"Invested\" from snapshots order by ts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "locale",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#B877D9"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Open positions",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select count(*) as positions from positions"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73BF69"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Crew success rate",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select coalesce(100.0*avg(case when status='success' then 1 else 0 end),0) as success from runs where status<>'running'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73BF69"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Recoveries (fallbacks, retries, overrides)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select count(*) as recoveries from events where kind in ('llm_fallback','data_fallback','guardrail_retry','risk_override','risk_veto','auto_exit')"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73BF69"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Orders waiting for market open",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#FADE2A"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select count(*) as pending from signals where status = 'pending'"
+        }
       ]
-     }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Portfolio value over time · ${market}",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "description": "Total value, the part invested in stocks and the cash, in the market's currency.",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, equity as \"Portfolio value\", positions_value as \"Invested\", cash as \"Cash\" from snapshots order by ts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "locale",
+          "decimals": 0,
+          "custom": {
+            "showPoints": "always",
+            "pointSize": 4,
+            "lineWidth": 2,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "last"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Portfolio vs benchmark (growth of 100) · ${market}",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "select ts as time, equity / first_value(equity) over (order by ts) * 100 as \"Portfolio\", benchmark / first_value(benchmark) over (order by ts) * 100 as \"Benchmark (SPY / NIFTY 50)\" from snapshots where benchmark is not null order by ts"
+        }
+      ],
+      "description": "Growth of 100 since the first snapshot. Snapshots are taken every 15 minutes by the scheduler; outside US market hours prices do not move, so both lines stay flat.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "custom": {
+            "showPoints": "always",
+            "pointSize": 5,
+            "lineWidth": 2,
+            "spanNulls": true,
+            "axisSoftMin": 99,
+            "axisSoftMax": 101
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Benchmark (SPY / NIFTY 50)"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "last"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "table",
+      "title": "Current holdings · ${market}",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 14,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select ticker as \"Stock\", shares as \"Shares\", round(avg_price::numeric, 2) as \"Avg cost\", round(last_price::numeric, 2) as \"Last price\", round((shares * last_price)::numeric, 0) as \"Value\", round(((last_price - avg_price) * shares)::numeric, 0) as \"P&L\", round(((last_price / avg_price - 1) * 100)::numeric, 2) as \"P&L %\", round(stop_loss::numeric, 2) as \"Stop-loss\", round(take_profit::numeric, 2) as \"Target\", sector as \"Sector\" from positions order by shares * last_price desc"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^P&L"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#F2495C",
+                      "value": null
+                    },
+                    {
+                      "color": "#73BF69",
+                      "value": 0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "locale"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "piechart",
+      "title": "Allocation (positions + cash)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 17,
+        "w": 5,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select ticker as metric, shares*last_price as value from positions union all (select 'Cash' as metric, cash as value from snapshots order by ts desc limit 1)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": true,
+          "calcs": []
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "list",
+          "placement": "right"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "piechart",
+      "title": "Signals by action",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 19,
+        "y": 17,
+        "w": 5,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select action as metric, count(*) as value from signals group by action"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": true,
+          "calcs": []
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "list",
+          "placement": "right"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Tool calls (bars) & avg latency ms (right axis)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select name as tool, count(*) as calls, round(avg(duration_ms)::numeric,0) as avg_ms from events where kind='tool_call' group by name order by calls desc"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg_ms"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xTickLabelRotation": -30,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "Agent events by type",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select kind, count(*) as n from events group by kind order by n desc"
+        }
+      ],
+      "options": {
+        "xTickLabelRotation": -30,
+        "legend": {
+          "showLegend": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Latest signals",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select ts as time, ticker, action, round(confidence::numeric,2) as confidence, price, stop_loss, take_profit, shares, status, left(rationale,160) as rationale from signals order by ts desc limit 20"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Error recovery log",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 14,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select ts as time, run_id, kind, name, left(detail,200) as detail from events where kind in ('llm_fallback','data_fallback','guardrail_retry','risk_override','risk_veto','auto_exit','error') order by ts desc limit 30"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Crew runs",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 41,
+        "w": 10,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select id, ticker, started_at as time, model, status, attempts, duration_s from runs order by id desc limit 30"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "⚡ Automatic activity (sales at stop-loss / take-profit, queued + filled orders, daily crew runs)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${market}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${market}"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "select ts as time, case kind when 'auto_exit' then 'automatic sale' when 'order_queued' then 'order queued (market closed)' when 'order_filled' then 'queued order filled' when 'order_cancelled' then 'queued order cancelled' when 'crew_batch' then 'daily crew run' end as action, detail from events where kind in ('auto_exit','order_queued','order_filled','order_cancelled','crew_batch') order by ts desc limit 50"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "finsight"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "market",
+        "label": "Market",
+        "type": "datasource",
+        "query": "grafana-postgresql-datasource",
+        "regex": "/market/",
+        "current": {
+          "selected": true,
+          "text": "US market ($)",
+          "value": "finsight-pg"
+        },
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
     ]
-   },
-   "options": {
-    "xTickLabelRotation": -30,
-    "legend": {
-     "displayMode": "list",
-     "placement": "bottom"
-    }
-   }
-  },
-  {
-   "id": 10,
-   "type": "barchart",
-   "title": "Agent events by type",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 12,
-    "y": 13,
-    "w": 12,
-    "h": 8
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select kind, count(*) as n from events group by kind order by n desc"
-    }
-   ],
-   "options": {
-    "xTickLabelRotation": -30,
-    "legend": {
-     "showLegend": false
-    }
-   }
-  },
-  {
-   "id": 11,
-   "type": "table",
-   "title": "Latest signals",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 0,
-    "y": 21,
-    "w": 24,
-    "h": 8
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select ts as time, ticker, action, round(confidence::numeric,2) as confidence, price, stop_loss, take_profit, shares, status, left(rationale,160) as rationale from signals order by ts desc limit 20"
-    }
-   ]
-  },
-  {
-   "id": 12,
-   "type": "table",
-   "title": "Error recovery log",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 0,
-    "y": 29,
-    "w": 14,
-    "h": 8
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select ts as time, run_id, kind, name, left(detail,200) as detail from events where kind in ('llm_fallback','data_fallback','guardrail_retry','risk_override','risk_veto','auto_exit','error') order by ts desc limit 30"
-    }
-   ]
-  },
-  {
-   "id": 13,
-   "type": "table",
-   "title": "Crew runs",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 14,
-    "y": 29,
-    "w": 10,
-    "h": 8
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select id, ticker, started_at as time, model, status, attempts, duration_s from runs order by id desc limit 30"
-    }
-   ]
-  },
-  {
-   "id": 14,
-   "type": "table",
-   "title": "\u26a1 Automatic activity (sales at stop-loss / take-profit, queued + filled orders, daily crew runs)",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 0,
-    "y": 37,
-    "w": 18,
-    "h": 9
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select ts as time, case kind when 'auto_exit' then 'automatic sale' when 'order_queued' then 'order queued (market closed)' when 'order_filled' then 'queued order filled' when 'order_cancelled' then 'queued order cancelled' when 'crew_batch' then 'daily crew run' end as action, detail from events where kind in ('auto_exit','order_queued','order_filled','order_cancelled','crew_batch') order by ts desc limit 50"
-    }
-   ]
-  },
-  {
-   "id": 15,
-   "type": "stat",
-   "title": "Orders waiting for market open",
-   "datasource": {
-    "type": "grafana-postgresql-datasource",
-    "uid": "${market}"
-   },
-   "gridPos": {
-    "x": 18,
-    "y": 37,
-    "w": 6,
-    "h": 9
-   },
-   "fieldConfig": {
-    "defaults": {
-     "unit": "none",
-     "decimals": 0,
-     "color": {
-      "mode": "fixed",
-      "fixedColor": "#FADE2A"
-     }
-    },
-    "overrides": []
-   },
-   "options": {
-    "reduceOptions": {
-     "calcs": [
-      "lastNotNull"
-     ]
-    },
-    "colorMode": "value",
-    "graphMode": "none"
-   },
-   "targets": [
-    {
-     "refId": "A",
-     "datasource": {
-      "type": "grafana-postgresql-datasource",
-      "uid": "${market}"
-     },
-     "rawQuery": true,
-     "editorMode": "code",
-     "format": "table",
-     "rawSql": "select count(*) as pending from signals where status = 'pending'"
-    }
-   ]
   }
- ],
- "tags": [
-  "finsight"
- ],
- "templating": {
-  "list": [
-   {
-    "name": "market",
-    "label": "Market",
-    "type": "datasource",
-    "query": "grafana-postgresql-datasource",
-    "regex": "/market/",
-    "current": {
-     "selected": true,
-     "text": "US market ($)",
-     "value": "finsight-pg"
-    },
-    "hide": 0,
-    "refresh": 1,
-    "includeAll": false,
-    "multi": false
-   }
-  ]
- }
 }

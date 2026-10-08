@@ -94,6 +94,10 @@ def money(x, dec=0):
     return f"{'-' if neg else ''}{CUR}{body}{'.' + frac if frac else ''}"
 
 
+def signed_money(x, dec=0):
+    return "–" if x is None else ("+" if x >= 0 else "−") + money(abs(x), dec)
+
+
 def pct(x, dec=1, sign=True):
     return "–" if x is None else f"{x:+.{dec}f}%" if sign else f"{x:.{dec}f}%"
 
@@ -168,8 +172,8 @@ def live_bar():
     ms = market_clock.status()
     eq = broker.portfolio_summary()["equity"]
     clock = market_clock.now().strftime("%a %H:%M:%S") + (" · live" if ms["open"] else "")
-    html(ui.header(MK["name"], FLAG[config.MARKET], ms, model_name, money_short(eq),
-                   pct((eq / start_cash - 1) * 100, 2), eq - start_cash, clock))
+    html(ui.header(MK["name"], FLAG[config.MARKET], ms, model_name, money(eq),
+                   f"{signed_money(eq - start_cash)} ({pct((eq / start_cash - 1) * 100, 2)})", eq - start_cash, clock))
     q = quotes(config.WATCHLIST + [MK["benchmark"]])
     html(ui.tape([(BENCH if t == MK["benchmark"] else short(t), money(v[0], 2), v[1]) for t, v in q.items()]))
 
@@ -558,19 +562,35 @@ with tab_port:
     closed = pd.DataFrame(db.fetch_all("select realized_pnl from trades where realized_pnl is not null"))
     wins = f"{(closed['realized_pnl'] > 0).mean():.0%}" if len(closed) else "–"
     invested = 1 - summ["cash"] / summ["equity"] if summ["equity"] else 0
+    pos_value = summ["equity"] - summ["cash"]
     html(ui.cards([
-        {"label": "Equity", "value": money_short(summ["equity"]), "sub": money(summ["equity"], 2)},
-        {"label": "Return since start", "value": pct((summ["equity"] / start_cash - 1) * 100, 2),
-         "tone": ui.tone_of(summ["equity"] - start_cash), "sub": f"from {money_short(start_cash)}"},
-        {"label": "Cash", "value": money_short(summ["cash"]), "sub": f"{1 - invested:.0%} of equity"},
-        {"label": "Open positions", "value": len(summ["positions"])},
+        {"label": "Portfolio value", "value": money(summ["equity"]), "sub": f"cash + stocks · started at {money(start_cash)}"},
+        {"label": "Profit / loss", "value": signed_money(summ["equity"] - start_cash),
+         "tone": ui.tone_of(summ["equity"] - start_cash), "sub": f"{pct((summ['equity'] / start_cash - 1) * 100, 2)} since start"},
+        {"label": "Invested in stocks", "value": money(pos_value), "sub": f"{invested:.0%} of the portfolio · {len(summ['positions'])} positions"},
+        {"label": "Cash", "value": money(summ["cash"]), "sub": f"{1 - invested:.0%} of the portfolio"},
         {"label": "Win rate (closed)", "value": wins, "sub": f"{len(closed)} closed trades"},
     ]))
 
-    snaps = pd.DataFrame(db.fetch_all("select ts, equity, benchmark from snapshots order by ts"))
+    snaps = pd.DataFrame(db.fetch_all("select ts, cash, positions_value, equity, benchmark from snapshots order by ts"))
     g_l, g_r = st.columns([2.3, 1])
     with g_l:
-        if len(snaps) > 1 and snaps["benchmark"].notna().any():
+        view = st.segmented_control("Chart", ["Value", f"Growth vs {BENCH}"], default="Value", key="port_view",
+                                    label_visibility="collapsed")
+        if len(snaps) > 1 and view == "Value":
+            snaps["ts"] = pd.to_datetime(snaps["ts"]).dt.tz_localize("UTC").dt.tz_convert(MK["timezone"])
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=snaps["ts"], y=snaps["equity"], name="Portfolio value", mode="lines+markers",
+                line=dict(color=C["accent"], width=2.4), marker=dict(size=5),
+                customdata=snaps[["positions_value", "cash"]].values,
+                hovertemplate=(f"%{{x|%d %b %H:%M}}<br>Value {CUR}%{{y:,.0f}}<br>Invested {CUR}%{{customdata[0]:,.0f}}"
+                               f"<br>Cash {CUR}%{{customdata[1]:,.0f}}<extra></extra>")))
+            fig.add_hline(y=start_cash, line=dict(color=C["muted"], dash="dot", width=1),
+                          annotation_text=f"starting value {money(start_cash)}", annotation_position="bottom left")
+            fig.update_layout(height=420, title=f"Portfolio value · {MK['currency']}", yaxis=dict(tickprefix=CUR, tickformat=",.0f"))
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+        elif len(snaps) > 1 and snaps["benchmark"].notna().any():
             snaps["ts"] = pd.to_datetime(snaps["ts"]).dt.tz_localize("UTC").dt.tz_convert(MK["timezone"])
             b0 = snaps["benchmark"].dropna().iloc[0]
             snaps["port"] = snaps["equity"] / start_cash * 100

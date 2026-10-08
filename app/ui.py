@@ -165,8 +165,8 @@ def header(market_name, flag, mstatus, model, equity_txt, pnl_txt, pnl_val, cloc
     return (f'<div class="fs-header"><div class="fs-hl">'
             f'<div class="fs-brand"><div class="fs-logo">FS</div><div>FinSight Crew<small>Agentic research &amp; '
             f'paper-trading desk · {flag} {e(market_name)}</small></div></div>{mk}{ai}{clock}</div>'
-            f'<div class="fs-hr"><div class="fs-hstat"><span>Equity</span><b>{e(equity_txt)}</b></div>'
-            f'<div class="fs-hstat"><span>Since start</span><b class="{tone_of(pnl_val)}">{e(pnl_txt)}</b></div></div></div>')
+            f'<div class="fs-hr"><div class="fs-hstat"><span>Portfolio value</span><b>{e(equity_txt)}</b></div>'
+            f'<div class="fs-hstat"><span>Profit / loss</span><b class="{tone_of(pnl_val)}">{e(pnl_txt)}</b></div></div></div>')
 
 
 def tape(items) -> str:
